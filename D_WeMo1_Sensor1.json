@@ -1,0 +1,281 @@
+{
+    "flashicon": "icons/Motion_Sensor.png",
+    "imgIconBody": "",
+    "imgIconDimmable": "",
+    "imgIconTurnable": "",
+    "imgIconMin": "",
+    "imgIconMax": "",
+    "halloIconsDir": "pics/hallo",
+    "x": "2",
+    "y": "3",
+	"state_icons": [
+		"Motion_Sensor_0.png",
+		"Motion_Sensor_100.png"
+	],
+    "inScene": "1",
+    "DisplayStatus": {
+        "Service": "urn:micasaverde-com:serviceId:SecuritySensor1",
+        "Variable": "Tripped",
+        "MinValue": "0",
+        "MaxValue": "1"
+    },
+    "doc_url": {
+        "doc_language": 1,
+        "doc_manual": 1,
+        "doc_version": 1,
+        "doc_platform": 0,
+        "doc_page": "sensors"
+    },
+    "ToggleButton": 1,
+    "Tabs": [
+        {
+            "Label": {
+                "lang_tag": "tabname_control",
+                "text": "Control"
+            },
+            "Position": "0",
+            "TabType": "flash",
+            "ControlGroup": [
+                {
+                    "id": "1",
+                    "isSingle": "1",
+                    "scenegroup": "1"
+                },
+                {
+                    "id": "2",
+                    "isSingle": "1",
+                    "scenegroup": "1"
+                }
+            ],
+            "SceneGroup": [
+                {
+                    "id": "1",
+                    "top": "2",
+                    "left": "0",
+                    "x": "2",
+                    "y": "1"
+                }
+            ],
+            "Control": [
+                {
+                    "ControlGroup": "1",
+                    "ControlType": "button",
+                    "top": "0",
+                    "left": "0",
+                    "Label": {
+                        "lang_tag": "cmd_arm",
+                        "text": "Arm"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:SecuritySensor1",
+                        "Variable": "Armed",
+                        "Value": "1",
+                        "Top": 60,
+                        "Left": 50,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:SecuritySensor1",
+                        "Action": "SetArmed",
+                        "Parameters": [
+                            {
+                                "Name": "newArmedValue",
+                                "Value": "1"
+                            }
+                        ]
+                    },
+					"ControlCode": "arm"
+                },
+                {
+                    "ControlGroup": "2",
+                    "ControlType": "button",
+                    "top": "0",
+                    "left": "1",
+                    "Label": {
+                        "lang_tag": "cmd_bypass",
+                        "text": "Bypass"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:SecuritySensor1",
+                        "Variable": "Armed",
+                        "Value": "0",
+                        "Top": 60,
+                        "Left": 145,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:SecuritySensor1",
+                        "Action": "SetArmed",
+                        "Parameters": [
+                            {
+                                "Name": "newArmedValue",
+                                "Value": "0"
+                            }
+                        ]
+                    },
+					"ControlCode": "bypass"
+                }
+            ]
+        },
+        {
+            "Label": {
+                "lang_tag": "settings",
+                "text": "Settings"
+            },
+            "Position": "1",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "simple_device"
+        },
+        {
+            "Label": {
+                "lang_tag": "advanced",
+                "text": "Advanced"
+            },
+            "Position": "2",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "advanced_device"
+        },
+        {
+            "Label": {
+                "lang_tag": "device_options",
+                "text": "Device Options"
+            },
+            "Position": "3",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "device_zwave_options"
+        },
+        {
+            "Label": {
+                "lang_tag": "logs",
+                "text": "Logs"
+            },
+            "Position": "4",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "device_logs"
+        },
+        {
+            "Label": {
+                "lang_tag": "notifications",
+                "text": "Notifications"
+            },
+            "Position": "5",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "device_notifications"
+        }
+    ],
+    "sceneList": {
+        "group_1": {
+            "cmd_1": {
+                "label": "Arm",
+                "serviceId": "urn:micasaverde-com:serviceId:SecuritySensor1",
+                "action": "SetArmed",
+                "arguments": {
+                    "newArmedValue": "1"
+                },
+                "display": {
+                    "service": "urn:micasaverde-com:serviceId:SecuritySensor1",
+                    "variable": "Armed",
+                    "value": "1"
+                }
+            },
+            "cmd_2": {
+                "label": "Bypass",
+                "serviceId": "urn:micasaverde-com:serviceId:SecuritySensor1",
+                "action": "SetArmed",
+                "arguments": {
+                    "newArmedValue": "0"
+                },
+                "display": {
+                    "service": "urn:micasaverde-com:serviceId:SecuritySensor1",
+                    "variable": "Armed",
+                    "value": "0"
+                }
+            }
+        }
+    },
+    "eventList2": [
+        {
+            "id": 1,
+            "label": {
+                "lang_tag": "door_window_motion_sensor_is_tripped",
+                "text": "A sensor (door/window/motion/etc.) is tripped"
+            },
+            "serviceId": "urn:micasaverde-com:serviceId:SecuritySensor1",
+            "argumentList": [
+                {
+                    "id": 1,
+                    "dataType": "boolean",
+                    "defaultValue": "",
+                    "allowedValueList": [
+                        {
+                            "Yes": "1",
+                            "HumanFriendlyText": {
+                                "lang_tag": "hft_sensor_tripped",
+                                "text": "_DEVICE_NAME_ is tripped"
+                            }
+                        },
+                        {
+                            "No": "0",
+                            "HumanFriendlyText": {
+                                "lang_tag": "hft_sensor_not_tripped",
+                                "text": "_DEVICE_NAME_ is not tripped"
+                            }
+                        }
+                    ],
+                    "name": "Tripped",
+                    "comparisson": "=",
+                    "prefix": {},
+                    "suffix": {}
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "label": {
+                "lang_tag": "an_armed_sensor_is_tripped",
+                "text": "An armed sensor is tripped"
+            },
+            "serviceId": "urn:micasaverde-com:serviceId:SecuritySensor1",
+            "serviceStateTable": {
+                "Armed": {
+                    "value": "1",
+                    "comparisson": "="
+                }
+            },
+            "argumentList": [
+                {
+                    "id": 1,
+                    "dataType": "boolean",
+                    "allowedValueList": [
+                        {
+                            "Yes": "1",
+                            "HumanFriendlyText": {
+                                "lang_tag": "hft_armed_sensor_tripped",
+                                "text": "_DEVICE_NAME_ armed is tripped"
+                            }
+                        },
+                        {
+                            "No": "0",
+                            "HumanFriendlyText": {
+                                "lang_tag": "hft_armed_sensor_not_tripped",
+                                "text": "_DEVICE_NAME_ armed is not tripped"
+                            }
+                        }
+                    ],
+                    "name": "Tripped",
+                    "comparisson": "=",
+                    "prefix": {},
+                    "suffix": {}
+                }
+            ]
+        }
+    ],
+    "DeviceType": "urn:schemas-futzle-com:device:WeMoSensor:1",
+}
