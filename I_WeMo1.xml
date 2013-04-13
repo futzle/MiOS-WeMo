@@ -7,6 +7,7 @@ function initialize (lul_device)
 	package.loaded.L_WeMo1 = nil
 	this_plugin = require ("L_WeMo1")
 	reentry = this_plugin.reentry
+	cancelProxySubscription = this_plugin.cancelProxySubscription
 	return this_plugin.initialize (lul_device)
 end
 	</functions>

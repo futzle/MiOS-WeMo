@@ -379,6 +379,12 @@ function subscribeToDevice(eventSubURL, renewalSID, timeout)
 end
 
 -- getProxyApiVersion()
+-- Calls the proxy with GET /version.
+-- Sets the ProxyApiVersion Luup variable to the value received
+-- (or the empty string).
+-- Return value:
+--   nil if the proxy is not running.
+--   The proxy API version (as a string) otherwise.
 function getProxyApiVersion()
 	local sock = function()
 		local s = socket.tcp()
@@ -410,6 +416,8 @@ function getProxyApiVersion()
 	end
 end
 
+-- proxyVersionAtLeast(n)
+-- Returns true if the proxy is running and is at least version n.
 function proxyVersionAtLeast(n)
 	if (ProxyApiVersion and tonumber(ProxyApiVersion:match("^(%d+)")) >= n) then
 		return true
@@ -417,6 +425,14 @@ function proxyVersionAtLeast(n)
 	return false
 end
 
+-- informProxyOfSubscription(deviceId)
+-- Sends a PUT /upnp/event/[sid] message to the proxy,
+-- asking it to inform this plugin if the BinaryState
+-- UPnP variable changes.
+-- Return value:
+--   nil if the proxy timed out (should try again).
+--   false if the proxy refused our request (permanently).
+--   true if the proxy agreed to our request.
 function informProxyOfSubscription(deviceId)
 	debug("Informing proxy of subscription for device " .. deviceId, 2)
 	local sock = function()
@@ -439,7 +455,7 @@ function informProxyOfSubscription(deviceId)
 		create = sock,
 		method = "PUT",
 		headers = {
-			["Content-Type"] = "text/html",
+			["Content-Type"] = "text/xml",
 			["Content-Length"] = proxyRequestBody:len(),
 		},
 		source = ltn12.source.string(proxyRequestBody),
@@ -457,6 +473,42 @@ function informProxyOfSubscription(deviceId)
 	end
 end
 
+-- cancelProxySubscription(sid)
+-- Sends a DELETE /upnp/event/[sid] message to the proxy,
+-- Return value:
+--   nil if the proxy timed out (should try again).
+--   false if the proxy refused our request (permanently).
+--   true if the proxy agreed to our request.
+function cancelProxySubscription(sid)
+	debug("Cancelling unwelcome subscription for sid " .. sid, 2)
+	local sock = function()
+		local s = socket.tcp()
+		s:settimeout(2)
+		return s
+	end
+
+	local request, code = http.request({
+		url = "http://localhost:2529/upnp/event/" .. url.escape(sid),
+		create = sock,
+		method = "DELETE",
+		source = ltn12.source.empty(),
+		sink = ltn12.sink.null(),
+	})
+	if (request == nil and code ~= "closed") then
+		debug("Failed to cancel subscription: " .. code, 2)
+		return nil
+	elseif (code ~= 200) then
+		debug("Failed to cancel subscription: " .. code, 2)
+		return false
+	else
+		debug("Successfully cancelled subscription", 2)
+		return true
+	end
+end
+
+-- queueAction(delay, retries, action)
+-- Remember to run the function in action (with no parameters)
+-- in delay seconds.  Allow only the specified number of retries.
 function queueAction(delay, retries, action)
 	table.insert(FutureActionQueue, {
 		time = os.time() + delay,
@@ -465,6 +517,13 @@ function queueAction(delay, retries, action)
 	})
 end
 
+-- renewSubscription(deviceId)
+-- Try to renew the UPnP subscription for the child device deviceId.
+-- Return value:
+--   nil if the renewal request timed out (and we should retry).
+--   false if the renewal was refused (permanently).
+--   true if the renewal was accepted (a later renewal will be
+--     queued and the proxy will be informed).
 function renewSubscription(deviceId)
 	debug("Renewing subscription for device " .. deviceId, 2)
 	local d = ChildDevices[deviceId]
@@ -511,12 +570,14 @@ function subscribeToAllDevices()
 			end
 		end
 	end
-
 end
 
+-- schedule()
+-- Ask the plugin to sleep for as many seconds as
+-- the next event (or five minutes, if there are no events).
 function schedule()
 	-- How long to sleep?
-	local delay = 3600
+	local delay = 300
 	for i = 1, #FutureActionQueue do
 		if (FutureActionQueue[i].time <= os.time()) then
 			delay = 1
@@ -528,6 +589,10 @@ function schedule()
 	luup.call_delay("reentry", delay, "")
 end
 
+-- reentry()
+-- This function will be called when a sleep from
+-- schedule() completes.  In theory, one of the queued actions
+-- is now ready to perform.
 function reentry()
 	local action = nil
 	for i = 1, #FutureActionQueue do
@@ -537,6 +602,7 @@ function reentry()
 		end
 	end
 
+	-- Clock skew might mean there is no action.
 	if (action) then
 		local result = action.action()
 		if (result == nil) then
@@ -744,6 +810,8 @@ function handleNotifyBinaryState(lul_device, binaryState, sid)
 		return true
 	end
 	debug("SID does not match: expected " .. ChildDevices[lul_device].sid .. ", got " .. sid)
+  -- Try to shut the proxy up, we don't care about this SID.
+	luup.call_delay("cancelProxySubscription", 1, sid)
 	return false
 end
 
@@ -832,6 +900,7 @@ function upnpCallAction(location, serviceType, action, parameters, values)
 end
 
 -- handleSetTarget(lul_device, newTargetValue)
+-- Called when the user asks to turn on or off a switch.
 function handleSetTarget(lul_device, newTargetValue)
 	debug("Setting Target = " .. newTargetValue .. " for device " .. lul_device)
 	if (ChildDevices[lul_device]) then
@@ -859,7 +928,4 @@ function handleSetTarget(lul_device, newTargetValue)
 		end
 	end
 	return false
-end
-
-function processTimerQueue()
 end
