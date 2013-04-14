@@ -374,7 +374,7 @@ function subscribeToDevice(eventSubURL, renewalSID, timeout)
 		end
 		local duration = headers["timeout"]:match("Second%-(%d+)")
 		debug("Subscription confirmed, SID = " .. headers["sid"] .. " with timeout " .. duration, 2)
-		return headers["sid"], duration
+		return headers["sid"], tonumber(duration)
 	end
 end
 
