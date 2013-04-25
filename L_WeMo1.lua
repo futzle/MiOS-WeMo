@@ -67,10 +67,10 @@ function ssdpSearchParse(resp)
 		-- Got a good response.
 		local info = {}
 		-- CACHE-CONTROL says when this information expires
-		info.expiry = resp:match("\r\nCACHE-CONTROL: max-age=(%d+)\r\n")
+		info.expiry = resp:match("\r\nCACHE-CONTROL: *max-age=(%d+)\r\n")
 		if (info.expiry) then info.expiry = os.time() + tonumber(info.expiry) end
 		-- LOCATION is a URL which says where this service can be reached.
-		local location = resp:match("\r\nLOCATION: (.-)\r\n")
+		local location = resp:match("\r\nLOCATION: *(.-)\r\n")
 		if (location) then
 			-- Extract host and port for convenience.
 			local host = location:match("://(.-)/")
@@ -81,11 +81,15 @@ function ssdpSearchParse(resp)
 				info.host = host
 				info.port = 80
 			end
+		else
+			return nil, "Missing header LOCATION"
 		end
 		-- USN is the service name.
-		info.usn = resp:match("\r\nUSN: (.-)\r\n")
+		info.usn = resp:match("\r\nUSN: *(.-)\r\n")
 		if (info.usn) then
 			info.uuid, info.namespace = info.usn:match("^(.-)::(.+)$")
+		else
+			return nil, "Missing header USN"
 		end
 		return location, info
 	else
@@ -651,20 +655,22 @@ function initialize(lul_device)
 		if (childType and childType ~= "") then
 			-- This was the device's Friendly Name at creation time.
 			local childName = luup.variable_get(ServiceId, "Child" .. child .. "Name", Device)
-			-- Use the UPnP device's USN (UDN) for the unique Id.
-			-- There isn't any way to set the device's special udn variable
-			-- in a luup.chdev.append() so don't touch it.
-			local childUSN = luup.variable_get(ServiceId, "Child" .. child .. "USN", Device)
+			local childParameters = ""
+			-- Child may be at a fixed IP address.
+			local childAddress = luup.variable_get(ServiceId, "Child" .. child .. "Host", Device)
+			-- Use the device's IP address (if it's static) or
+			-- (otherwise) its UPnP device's USN (UDN) for the unique Id.
+			local childUSN
+			if (childAddress and childAddress ~= "") then
+				childParameters = childParameters .. ServiceId .. ",Host=" .. childAddress
+				childUSN = childAddress
+			else
+				childUSN = luup.variable_get(ServiceId, "Child" .. child .. "USN", Device)
+			end
 			-- Keep local munged copies of the device's UPnP files,
 			-- because we need additional elements (<staticJson>) and
 			-- want to filter out services we can't use.
 			local childDeviceFile = TypeDeviceFileMap[childType]
-			local childParameters = ""
-			-- Child may be at a fixed IP address.
-			local childAddress = luup.variable_get(ServiceId, "Child" .. child .. "Host", Device)
-			if (childAddress and childAddress ~= "") then
-				childParameters = childParameters .. ServiceId .. ",Host=" .. childAddress
-			end
 			debug("Creating child " .. childUSN .. " (" .. childName .. ") as " .. childType, 1)
 			luup.chdev.append(Device, children, childUSN, childName, childType,
 				childDeviceFile, "I_WeMo1.xml", childParameters, false)
@@ -675,12 +681,13 @@ function initialize(lul_device)
 	-- If list of child devices changed, Luup engine will restart here.
 
 	-- Build child list.
+	debug("Roll call of child devices", 2)
 	for i, d in pairs(luup.devices) do
 		if (d.device_num_parent == Device) then
 			local usn = d.id
 			UsnChildMap[usn] = i
 			ChildDevices[i] = {}
-			ChildDevices[i].usn = usn
+			debug("MiOS child device " .. i .. " has unique id " .. usn, 2)
 		end
 	end
 
@@ -692,20 +699,19 @@ function initialize(lul_device)
 	for d, childDevice in pairs(ChildDevices) do
 		local host = luup.variable_get(ServiceId, "Host", d)
 		if (host and host ~= "") then
-			debug("Reconnecting to " .. childDevice.usn .. " at fixed address " .. host, 1)
+			debug("Reconnecting to device at fixed address " .. host, 1)
 			local ssdpResponse = ssdpSearch(nil, 5, host)
 			for location, info in pairs(ssdpResponse) do
-				if (info.uuid == childDevice.usn) then
-					debug("Reconnected at " .. location, 2)
-					childDevice.port = info.port
-					childDevice.location = location
-					childDevice.found = true
-					local upnpDevice = upnpGetDevice(location, 5)
-					if (upnpDevice) then
-						childDevice.serviceType = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].serviceType
-						childDevice.controlURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].controlURL
-						childDevice.eventSubURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].eventSubURL
-					end
+				debug("Reconnected at " .. location, 2)
+				childDevice.host = host
+				childDevice.port = info.port
+				childDevice.location = location
+				childDevice.found = true
+				local upnpDevice = upnpGetDevice(location, 5)
+				if (upnpDevice) then
+					childDevice.serviceType = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].serviceType
+					childDevice.controlURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].controlURL
+					childDevice.eventSubURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].eventSubURL
 				end
 			end
 			if (not childDevice.found) then
@@ -729,20 +735,26 @@ function initialize(lul_device)
 		for location, info in pairs(allUpnp) do
 			debug("UPnP location " .. location, 2)
 			debug("UPnP udn " .. info.uuid, 2)
-			local knownChild = UsnChildMap[info.uuid]
+			local knownChild = UsnChildMap[info.host]
+			if (knownChild == nil) then
+				-- Dynamic device, perhaps.
+				knownChild = UsnChildMap[info.uuid]
+			end
 			if (knownChild ~= nil) then
 				if (ChildDevices[knownChild].found) then
 					-- Already created with a static address.
-					debug("Skipping " .. info.uuid .. " because it has already been found.", 2)
+					debug("Skipping " .. info.uuid .. " because it has already been found at " .. location, 2)
 				else
 					-- Known device, may be at a different IP address now because of DHCP.
-					debug("Known uuid " .. info.uuid .. " is child device " .. knownChild .. " at " .. location, 2)
+					debug("Uuid " .. info.uuid .. " is child device " .. knownChild .. " at " .. location, 2)
 					ChildDevices[knownChild].host = info.host
 					ChildDevices[knownChild].port = info.port
 					ChildDevices[knownChild].location = location
 					ChildDevices[knownChild].found = true
 					local upnpDevice = upnpGetDevice(location, 5)
 					if (upnpDevice) then
+						ChildDevices[knownChild].serviceType = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].serviceType
+						ChildDevices[knownChild].controlURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].controlURL
 						ChildDevices[knownChild].eventSubURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].eventSubURL
 					end
 				end

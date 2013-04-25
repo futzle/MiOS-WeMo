@@ -36,20 +36,22 @@ function configuration(device)
 	var dynamicCount = 0;
 	childHtml += '<div style="border: black 1px solid; padding: 5px; margin: 5px;">';
 	childHtml += '<div style="font-weight: bold; text-align: center;">Existing WeMo devices</div>';
-	childHtml += '<table width="100%"><thead><th>Name</th><th>Type</th><th>Address</th><th>Room</th><th>Action</th></thead>';
+	childHtml += '<table width="100%"><thead><th>Name</th><th>Type</th><th>IP&#xA0;Address</th><th>Room</th><th>Action</th></thead>';
 	var i;
 	for (i = 1; i <= childDevices; i++)
 	{
 		// Find the child in the device list (requires exhaustive search).
 		var childDeviceType = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "Type", 0);
 		if (childDeviceType == "") { continue; }
+		var childDeviceHost = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "Host", 0);
 		var childDeviceUSN = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "USN", 0);
 		var childRoom;
 		var childFound = false;
 		for (checkDevice in jsonp.ud.devices)
 		{
 			if (jsonp.ud.devices[checkDevice].id_parent == device &&
-				jsonp.ud.devices[checkDevice].altid == childDeviceUSN)
+				(jsonp.ud.devices[checkDevice].altid == childDeviceUSN ||
+				jsonp.ud.devices[checkDevice].altid == childDeviceHost))
 			{
 				childName = jsonp.ud.devices[checkDevice].name;
 				var childRoomId = jsonp.ud.devices[checkDevice].room;
@@ -71,13 +73,12 @@ function configuration(device)
 		childHtml += '<td>' + (childDeviceType == "urn:Belkin:device:sensor:1" ? "Sensor" :
 			childDeviceType == "urn:Belkin:device:controllee:1" ? "Switch" :
 			childDeviceType.escapeHTML()) + '</td>';
-		var childAddress = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "Host", 0);
-		if (childAddress == undefined)
+		if (childDeviceHost == undefined)
 		{
-			childAddress = "Dynamic";
+			childDeviceHost = "Dynamic";
 			dynamicCount++;
 		}
-		childHtml += '<td>' + childAddress.escapeHTML() + '</td>';
+		childHtml += '<td>' + childDeviceHost.escapeHTML() + '</td>';
 		childHtml += '<td>' + childRoom.escapeHTML() + '</td>';
 		childHtml += '<td><input type="button" value="Remove" onClick="configurationRemoveChildDevice(' + device + ',' + i + ',this)"/></td>';
 		childHtml += '</tr>';
@@ -101,7 +102,7 @@ function configuration(device)
 	if (enableMulticast == "1")
 	{
 		var unknownDevices = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDeviceCount", 1) - 0;
-		html += '<table id="wemo_scanResults" width="100%"><thead><th>Name (Serial number)</th><th>Type</th><th>Address</th><th>Action</th></thead>';
+		html += '<table id="wemo_scanResults" width="100%"><thead><th>Name&#xA0;(Serial&#xA0;number)</th><th>Type</th><th>IP&#xA0;Address</th><th>Action</th></thead>';
 		var i;
 		for (i = 1; i <= unknownDevices; i++)
 		{
@@ -122,14 +123,19 @@ function configuration(device)
 		}
 		html += '</table>';
 	}
+	html += '</div>';
 
+	// Allow manual adding of device at static address.
+	html += '<div id="wemo_addManual" style="border: black 1px solid; padding: 5px; margin: 5px;">';
+	html += '<div style="font-weight: bold; text-align: center;">Manually add WeMo device</div>';
+	
 	html += '</div>';
 
 	// Notify user if the UPnP Proxy is not answering.
 	var proxyApiVersion = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "ProxyApiVersion", 1);
 	if (proxyApiVersion == undefined || proxyApiVersion == "")
 	{
-		html += '<div style="margin: 5px;"><p>UPnP Proxy is not running. Instant updates will not happen.</p></div>';
+		html += '<div style="margin: 5px;"><p>UPnP Proxy is not running. Instant updates will not happen.  More information <a target="_new" href="http://code.mios.com/trac/mios_upnp-event-proxy/">here</a>.</p></div>';
 	}
 	else
 	{
@@ -137,6 +143,7 @@ function configuration(device)
 	}
 
 	set_panel_html(html);
+	addManualRow(device, $('wemo_addManual'))
 }
 
 // Remove an existing device.
@@ -156,25 +163,66 @@ function setEnableMulticast(device, button)
 	$('wemo_saveChanges').show();
 }
 
+function addManualRow(device, node)
+{
+	var html = '';
+	html += 'Name&#xA0;<input type="text" class="wemo_name" size="16"/>&#xA0;';
+	html += 'Type&#xA0;<select class="wemo_type"><option value="urn:Belkin:device:controllee:1">Switch</option><option value="urn:Belkin:device:sensor:1">Sensor</option></select>&#xA0;';
+	html += 'IP&#xA0;Address&#xA0;<input type="text" class="wemo_host" size="15"/>&#xA0;';
+	html += '<input type="button" value="Add Static" onClick="configurationAddManualDevice(' + device + ',this)"/>';
+	var p = document.createElement("p");
+	p.innerHTML = html;
+	node.appendChild(p);
+}
+
+// Add a found or manual device.
+function configurationAddDevice(device, name, type, usn, host)
+{
+	var deviceCount = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", 0) - 0;
+	deviceCount++;
+	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Name", name, 0);
+	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Type", type, 0);
+	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "USN", usn, 0);
+	if (host != undefined)
+	{
+		set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Host", host, 0);
+	}
+	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", deviceCount, 0);
+}
+
 // Add a found device.
 function configurationAddFoundDevice(device, index, button, static)
 {
 	button.parentNode.select('input').invoke("disable");
-	var deviceCount = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", 0) - 0;
-	deviceCount++;
 
 	var unknownDeviceName = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + index + "Name", 0);
 	var unknownDeviceType = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + index + "Type", 0);
 	var unknownDeviceUSN = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + index + "USN", 0);
 	var unknownDeviceHost = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + index + "Host", 0);
-	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Name", unknownDeviceName, 0);
-	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Type", unknownDeviceType, 0);
-	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "USN", unknownDeviceUSN, 0);
-	if (static) {
-		set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Host", unknownDeviceHost, 0);
+	if (static)
+	{
+		configurationAddDevice(device, unknownDeviceName, unknownDeviceType, unknownDeviceUSN, unknownDeviceHost);
 	}
-	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", deviceCount, 0);
+	else
+	{
+		configurationAddDevice(device, unknownDeviceName, unknownDeviceType, unknownDeviceUSN, undefined);
+	}
 
 	button.setValue("Added");
 	$('wemo_saveChanges').show();
+}
+
+// Add a manual device.
+function configurationAddManualDevice(device, button)
+{
+	var name = $F(button.parentNode.select('input.wemo_name')[0]);
+	var type = $F(button.parentNode.select('select.wemo_type')[0]);
+	var host = $F(button.parentNode.select('input.wemo_host')[0]);
+	if (name == "") { name = "Manual WeMo device"; }
+	if (host == "") { return; }
+	button.disable();
+	configurationAddDevice(device, name, type, "", host);
+	button.setValue("Added");
+	$('wemo_saveChanges').show();
+	addManualRow(device, $('wemo_addManual'));
 }
