@@ -39,6 +39,12 @@ ChildDevices = {}
 ProxyApiVersion = nil
 FutureActionQueue = {}
 
+-- Debug levels:
+-- 0: None except startup message.
+-- 1: Errors that prevent the plugin from functioning.
+-- 2: UPnP status information.
+-- 3: UPnP request and response bodies.
+-- 4: XML parsing.
 function debug(s, level)
 	if (level == nil) then level = 1 end
 	if (level <= Debug) then
@@ -60,7 +66,7 @@ end
 --     namespace: namespace portion of USN, after "::".
 -- Return value on failure:
 --   [1] nil
---   [2] status code from first line of response.
+--   [2] reason for failure, or status code from first line of response.
 function ssdpSearchParse(resp)
 	local responseStatus = resp:match("^HTTP/1\.1 (%d%d%d)")
 	if (responseStatus == "200") then
@@ -82,17 +88,24 @@ function ssdpSearchParse(resp)
 				info.port = 80
 			end
 		else
+			debug("Missing header LOCATION", 2)
 			return nil, "Missing header LOCATION"
 		end
 		-- USN is the service name.
 		info.usn = resp:match("\r\nUSN: *(.-)\r\n")
 		if (info.usn) then
 			info.uuid, info.namespace = info.usn:match("^(.-)::(.+)$")
+			if (not info.uuid or not info.namespace) then
+				debug("Bad USN format from " .. location .. ": " .. info.usn, 2)
+				return nil, "Bad USN format: " .. info.usn
+			end
 		else
+			debug("Missing header USN", 2)
 			return nil, "Missing header USN"
 		end
 		return location, info
 	else
+		debug("Bad SSDP response " .. responseStatus, 2)
 		return nil, responseStatus
 	end
 end
@@ -118,18 +131,20 @@ function ssdpSearch(target, delay, ipaddr)
 		"MX: " .. delay .. "\r\n" ..
 		"ST: " .. target .. "\r\n" ..
 		"\r\n"
-	debug("M-SEARCH sent to " .. ipaddr .. ":1900: " .. req, 3)
+	debug("M-SEARCH sent to " .. ipaddr .. ":1900", 2)
+	debug("M-SEARCH body: " .. req, 3)
 	udp:sendto(req, ipaddr, 1900)
 	udp:settimeout(delay)
 
 	repeat
-		local resp, reason = udp:receive()
+		local resp, peer, port = udp:receivefrom()
 		
 		if (resp ~= nil) then
-			debug("M-SEARCH response received: " .. resp, 3)
+			debug("M-SEARCH response received from " .. peer .. " UDP port " .. port, 2)
+			debug("M-SEARCH response body: " .. resp, 3)
 			local location, info = ssdpSearchParse(resp)
 			if (location) then
-				debug("Response was from " .. info.host .. ":" .. info.port .. " from UUID " .. info.uuid, 3)
+				debug("Response identifies itself as " .. info.host .. ":" .. info.port .. " from UUID " .. info.uuid, 2)
 				result[location] = info
 			end
 		end
@@ -166,34 +181,34 @@ function createXpathParser(targets)
 
 	local xmlParser = lxp.new({
 		CharacterData = function(parser, string)
-			debug("XML: string " .. string, 3)
+			debug("XML: string " .. string, 4)
 			if (targetTable[currentXpath()]) then
-				debug("XPath matched, add to result", 3)
+				debug("XPath matched, add to result", 4)
 				result[currentXpath()][#(result[currentXpath()])] = result[currentXpath()][#(result[currentXpath()])] .. string
 			end
 		end,
 		StartElement = function(parser, elementName, attributes)
-			debug("XML: start element " .. elementName, 3)
+			debug("XML: start element " .. elementName, 4)
 			table.insert(currentXpathTable, elementName)
 			if (targetTable[currentXpath()]) then
 				table.insert(result[currentXpath()], "")
 			end
 		end,
 		EndElement = function(parser, elementName)
-			debug("XML: end element " .. elementName, 3)
+			debug("XML: end element " .. elementName, 4)
 			table.remove(currentXpathTable)
 		end,
 	}, "|")
 
 	local sink = function(chunk, err)
 		if (chunk == nil) then
-			debug("sink: end of file", 3)
+			debug("sink: end of file", 4)
 			xmlParser:close()
 			return nil
 		end
-		debug("sink: " .. chunk, 3)
+		debug("sink: " .. chunk, 4)
 		if (xmlParser:parse(chunk) == nil) then
-			debug("sink: error", 1)
+			debug("sink: error", 4)
 			xmlParser:close()
 		end
 		return 1
@@ -332,10 +347,10 @@ function subscribeToDevice(eventSubURL, renewalSID, timeout)
 	-- Learn Vera's IP address.
 	local s = socket.udp()
 	local remoteHost = eventSubURL:match("://(.-)[/:]")
-	debug("Remote host is " .. remoteHost)
+	debug("Remote host is " .. remoteHost, 3)
 	s:setpeername(remoteHost, 80) -- Any port will do, not actually connecting.
 	local myAddress = s:getsockname()
-	debug("Local host is " .. myAddress)
+	debug("Local host is " .. myAddress, 3)
 	s:close()
 
 	-- Create a socket with a timeout.
@@ -367,15 +382,12 @@ function subscribeToDevice(eventSubURL, renewalSID, timeout)
 	})
 
 	if (request == nil and code ~= "closed") then
-		debug("Failed to subscribe to " .. eventSubURL .. ": " .. code, 2)
+		debug("Failed to subscribe to " .. eventSubURL .. ": " .. code, 1)
 		return nil, code
 	elseif (code ~= 200) then
-		debug("Failed to subscribe to " .. eventSubURL .. ": " .. code, 2)
+		debug("Failed to subscribe to " .. eventSubURL .. ": " .. code, 1)
 		return nil, code
 	else
-		for k, v in pairs(headers) do
-			debug(k .. ":" .. v, 2)
-		end
 		local duration = headers["timeout"]:match("Second%-(%d+)")
 		debug("Subscription confirmed, SID = " .. headers["sid"] .. " with timeout " .. duration, 2)
 		return headers["sid"], tonumber(duration)
@@ -466,10 +478,10 @@ function informProxyOfSubscription(deviceId)
 		sink = ltn12.sink.null(),
 	})
 	if (request == nil and code ~= "closed") then
-		debug("Failed to notify proxy of subscription: " .. code, 2)
+		debug("Failed to notify proxy of subscription: " .. code, 1)
 		return nil
 	elseif (code ~= 200) then
-		debug("Failed to notify proxy of subscription: " .. code, 2)
+		debug("Failed to notify proxy of subscription: " .. code, 1)
 		return false
 	else
 		debug("Successfully notified proxy of subscription", 2)
@@ -499,10 +511,10 @@ function cancelProxySubscription(sid)
 		sink = ltn12.sink.null(),
 	})
 	if (request == nil and code ~= "closed") then
-		debug("Failed to cancel subscription: " .. code, 2)
+		debug("Failed to cancel subscription: " .. code, 1)
 		return nil
 	elseif (code ~= 200) then
-		debug("Failed to cancel subscription: " .. code, 2)
+		debug("Failed to cancel subscription: " .. code, 1)
 		return false
 	else
 		debug("Successfully cancelled subscription", 2)
@@ -532,7 +544,7 @@ function renewSubscription(deviceId)
 	debug("Renewing subscription for device " .. deviceId, 2)
 	local d = ChildDevices[deviceId]
 	local eventSubURL = url.absolute(d.location, d.eventSubURL)
-	debug("Renewing subscription at " .. eventSubURL, 1)
+	debug("Renewing subscription at " .. eventSubURL, 2)
 	-- Ask the device to inform the proxy about status changes.
 	local sid, duration = subscribeToDevice(eventSubURL, d.sid, 5)
 	if (sid) then
@@ -562,7 +574,7 @@ function subscribeToAllDevices()
 	if (proxyVersionAtLeast(1)) then
 		for childId, d in pairs(ChildDevices) do
 			local eventSubURL = url.absolute(d.location, d.eventSubURL)
-			debug("Subscribing to events at " .. eventSubURL, 1)
+			debug("Subscribing to events at " .. eventSubURL, 2)
 			-- Ask the device to inform the proxy about status changes.
 			local sid, duration = subscribeToDevice(eventSubURL, nil, 5)
 			if (sid) then
@@ -647,7 +659,7 @@ function initialize(lul_device)
 	else
 		childCount = tonumber(childCount)
 	end
-	debug("Creating up to " .. childCount .. " children", 1)
+	debug("Creating up to " .. childCount .. " children", 2)
 	local children = luup.chdev.start(Device)
 	for child = 1, childCount do
 		-- UPnP device type.
@@ -671,7 +683,7 @@ function initialize(lul_device)
 			-- because we need additional elements (<staticJson>) and
 			-- want to filter out services we can't use.
 			local childDeviceFile = TypeDeviceFileMap[childType]
-			debug("Creating child " .. childUSN .. " (" .. childName .. ") as " .. childType, 1)
+			debug("Creating child " .. childUSN .. " (" .. childName .. ") as " .. childType, 2)
 			luup.chdev.append(Device, children, childUSN, childName, childType,
 				childDeviceFile, "I_WeMo1.xml", childParameters, false)
 		end
@@ -699,7 +711,7 @@ function initialize(lul_device)
 	for d, childDevice in pairs(ChildDevices) do
 		local host = luup.variable_get(ServiceId, "Host", d)
 		if (host and host ~= "") then
-			debug("Reconnecting to device at fixed address " .. host, 1)
+			debug("Reconnecting to device at fixed address " .. host, 2)
 			local ssdpResponse = ssdpSearch(nil, 5, host)
 			for location, info in pairs(ssdpResponse) do
 				debug("Reconnected at " .. location, 2)
@@ -728,10 +740,10 @@ function initialize(lul_device)
 	end
 	if (enableMulticast == "1") then
 		local unknownDevices = {}
-		debug("Searching for UPnP devices...", 1)
+		debug("Searching for UPnP devices...", 2)
 		-- Search at any address.
 		local allUpnp = ssdpSearch(nil, 5)
-		debug("Searching complete", 1)
+		debug("Searching complete", 2)
 		for location, info in pairs(allUpnp) do
 			debug("UPnP location " .. location, 2)
 			debug("UPnP udn " .. info.uuid, 2)
@@ -767,7 +779,7 @@ function initialize(lul_device)
 					upnpDevice.location = location
 					upnpDevice.uuid = info.uuid
 					upnpDevice.host = info.host
-					debug("Noting details of unknown device " .. info.uuid, 1)
+					debug("Noting details of unknown device " .. info.uuid, 2)
 					table.insert(unknownDevices, upnpDevice)
 				end
 			end
@@ -809,7 +821,7 @@ end
 -- handleNotifyBinaryState(lul_device, binaryState, sid)
 -- Invoked by the UPnP proxy when it learns that a state (switch, sensor) has changed.
 function handleNotifyBinaryState(lul_device, binaryState, sid)
-	debug("Setting BinaryState = " .. binaryState .. " for device " .. lul_device)
+	debug("Setting BinaryState = " .. binaryState .. " for device " .. lul_device, 2)
 	if (ChildDevices[lul_device] and sid == ChildDevices[lul_device].sid) then
 		local childDeviceType = luup.devices[lul_device].device_type
 		if (childDeviceType == "urn:schemas-futzle-com:device:WeMoControllee:1") then
@@ -821,7 +833,7 @@ function handleNotifyBinaryState(lul_device, binaryState, sid)
 		end
 		return true
 	end
-	debug("SID does not match: expected " .. ChildDevices[lul_device].sid .. ", got " .. sid)
+	debug("SID does not match: expected " .. ChildDevices[lul_device].sid .. ", got " .. sid, 2)
   -- Try to shut the proxy up, we don't care about this SID.
 	luup.call_delay("cancelProxySubscription", 1, sid)
 	return false
@@ -830,7 +842,7 @@ end
 -- handleSetArmed(lul_device, newArmedValue)
 -- Invoked by the user when they request to Arm/Bypass a sensor.
 function handleSetArmed(lul_device, newArmedValue)
-	debug("Setting Armed = " .. newArmedValue .. " for device " .. lul_device)
+	debug("Setting Armed = " .. newArmedValue .. " for device " .. lul_device, 2)
 	if (ChildDevices[lul_device]) then
 		local childDeviceType = luup.devices[lul_device].device_type
 		if (childDeviceType == "urn:schemas-futzle-com:device:WeMoSensor:1") then
@@ -914,7 +926,7 @@ end
 -- handleSetTarget(lul_device, newTargetValue)
 -- Called when the user asks to turn on or off a switch.
 function handleSetTarget(lul_device, newTargetValue)
-	debug("Setting Target = " .. newTargetValue .. " for device " .. lul_device)
+	debug("Setting Target = " .. newTargetValue .. " for device " .. lul_device, 2)
 	if (ChildDevices[lul_device]) then
 		local childDeviceType = luup.devices[lul_device].device_type
 		if (childDeviceType == "urn:schemas-futzle-com:device:WeMoControllee:1") then
