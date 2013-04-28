@@ -7,6 +7,7 @@
   <device>
     <deviceType>urn:schemas-futzle-com:device:WeMoSensor:1</deviceType>
     <staticJson>D_WeMo1_Sensor1.json</staticJson> 
+		<Category_Num>4</Category_Num>
     <serviceList>
 	<service>
 		<serviceType>urn:schemas-micasaverde-com:service:SecuritySensor:1</serviceType>
