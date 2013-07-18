@@ -180,9 +180,9 @@ function configurationAddDevice(device, name, type, usn, host)
 {
 	var deviceCount = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", 0) - 0;
 	deviceCount++;
-	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Name", name, 0);
-	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Type", type, 0);
-	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "USN", usn, 0);
+	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Name", name || "", 0);
+	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Type", type || "", 0);
+	set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "USN", usn || "", 0);
 	if (host != undefined)
 	{
 		set_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Host", host, 0);
