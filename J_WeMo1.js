@@ -71,7 +71,8 @@ function configuration(device)
 		childHtml += '<tr>';
 		childHtml += '<td>' + childName.escapeHTML() + '</td>';
 		childHtml += '<td>' + (childDeviceType == "urn:Belkin:device:sensor:1" ? "Sensor" :
-			childDeviceType == "urn:Belkin:device:controllee:1" ? "Switch" :
+			childDeviceType == "urn:Belkin:device:controllee:1" ? "Appliance Switch" :
+			childDeviceType == "urn:Belkin:device:lightswitch:1" ? "Light Switch" :
 			childDeviceType.escapeHTML()) + '</td>';
 		if (childDeviceHost == undefined)
 		{
@@ -111,7 +112,8 @@ function configuration(device)
 			html += '<td>' + unknownDeviceName.escapeHTML() + '</td>';
 			var unknownDeviceType = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Type", 1);
 			html += '<td>' + (unknownDeviceType == "urn:Belkin:device:sensor:1" ? "Sensor" :
-				unknownDeviceType == "urn:Belkin:device:controllee:1" ? "Switch" :
+				unknownDeviceType == "urn:Belkin:device:controllee:1" ? "Appliance Switch" :
+				unknownDeviceType == "urn:Belkin:device:lightswitch:1" ? "Light Switch" :
 				unknownDeviceType.escapeHTML()) + '</td>';
 			var unknownDeviceAddress = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Host", 1);
 			html += '<td>' + unknownDeviceAddress.escapeHTML() + '</td>';
@@ -167,7 +169,7 @@ function addManualRow(device, node)
 {
 	var html = '';
 	html += 'Name&#xA0;<input type="text" class="wemo_name" size="16"/>&#xA0;';
-	html += 'Type&#xA0;<select class="wemo_type"><option value="urn:Belkin:device:controllee:1">Switch</option><option value="urn:Belkin:device:sensor:1">Sensor</option></select>&#xA0;';
+	html += 'Type&#xA0;<select class="wemo_type"><option value="urn:Belkin:device:controllee:1">Appliance Switch</option><option value="urn:Belkin:device:sensor:1">Sensor</option><option value="urn:Belkin:device:lightswitch:1">Light Switch</option></select>&#xA0;';
 	html += 'IP&#xA0;Address&#xA0;<input type="text" class="wemo_host" size="15"/>&#xA0;';
 	html += '<input type="button" value="Add Static" onClick="configurationAddManualDevice(' + device + ',this)"/>';
 	var p = document.createElement("p");

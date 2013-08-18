@@ -33,6 +33,7 @@ ServiceId = "urn:futzle-com:serviceId:WeMo1"
 TypeDeviceFileMap = {
 	[ "urn:Belkin:device:controllee:1" ] = "D_WeMo1_Controllee1.xml",
 	[ "urn:Belkin:device:sensor:1" ] = "D_WeMo1_Sensor1.xml",
+	[ "urn:Belkin:device:lightswitch:1" ] = "D_WeMo1_Controllee1.xml",
 }
 UsnChildMap = {}
 ChildDevices = {}
@@ -825,7 +826,7 @@ function handleNotifyBinaryState(lul_device, binaryState, sid)
 	if (ChildDevices[lul_device] and sid == ChildDevices[lul_device].sid) then
 		local childDeviceType = luup.devices[lul_device].device_type
 		if (childDeviceType == "urn:schemas-futzle-com:device:WeMoControllee:1") then
-			-- Switch.
+			-- Switch (Appliance or Light).
 			luup.variable_set("urn:upnp-org:serviceId:SwitchPower1", "Status", binaryState, lul_device)
 		elseif (childDeviceType == "urn:schemas-futzle-com:device:WeMoSensor:1") then
 			-- Sensor.
