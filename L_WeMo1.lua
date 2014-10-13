@@ -690,7 +690,7 @@ local function createChildDevices()
 			-- want to filter out services we can't use.
 			local isUI7 = luup.variable_get(ServiceId, "UI7Check", lug_device) or ""
 			if isUI7 == "" then
-				luup.variable_set(SID, "UI7Check", "false", lug_device)
+				luup.variable_set(ServiceId, "UI7Check", "false", lug_device)
 				isUI7 = "false"
 			end
 			if isUI7 == "true" then
