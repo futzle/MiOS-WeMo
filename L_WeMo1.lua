@@ -688,7 +688,7 @@ local function createChildDevices()
 			-- Keep local munged copies of the device's UPnP files,
 			-- because we need additional elements (<staticJson>) and
 			-- want to filter out services we can't use.
-			local isUI7 = luup.variable_get(SID, "UI7Check", lug_device) or ""
+			local isUI7 = luup.variable_get(ServiceId, "UI7Check", lug_device) or ""
 			if isUI7 == "" then
 				luup.variable_set(SID, "UI7Check", "false", lug_device)
 				isUI7 = "false"
