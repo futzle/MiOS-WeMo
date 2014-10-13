@@ -60,13 +60,13 @@ function debug(s, level)
 end
 
 local function checkVersion()
-	local ui7Check = luup.variable_get(SID, "UI7Check", lug_device) or ""
+	local ui7Check = luup.variable_get(ServiceId, "UI7Check", lug_device) or ""
 	if ui7Check == "" then
-		luup.variable_set(SID, "UI7Check", "false", lug_device)
+		luup.variable_set(ServiceId, "UI7Check", "false", lug_device)
 		ui7Check = "false"
 	end
 	if( luup.version_branch == 1 and luup.version_major == 7 and ui7Check == "false") then
-		luup.variable_set(SID, "UI7Check", "true", lug_device)
+		luup.variable_set(ServiceId, "UI7Check", "true", lug_device)
 		luup.attr_set("device_json", "D_WeMo1_UI7.json", lug_device)
 		luup.reload()
 	end
