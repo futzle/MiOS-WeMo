@@ -27,6 +27,7 @@ local url = require("socket.url")
 local ltn12 = require("ltn12")
 local lxp = require("lxp")
 
+local g_appendPtr
 Debug = 1
 Device = nil
 ServiceId = "urn:futzle-com:serviceId:WeMo1"
@@ -34,6 +35,11 @@ TypeDeviceFileMap = {
 	[ "urn:Belkin:device:controllee:1" ] = "D_WeMo1_Controllee1.xml",
 	[ "urn:Belkin:device:sensor:1" ] = "D_WeMo1_Sensor1.xml",
 	[ "urn:Belkin:device:lightswitch:1" ] = "D_WeMo1_Controllee1.xml",
+}
+TypeDeviceFileMap_UI7 = {
+	[ "urn:Belkin:device:controllee:1" ] = "D_WeMo1_Controllee1_UI7.xml",
+	[ "urn:Belkin:device:sensor:1" ] = "D_WeMo1_Sensor1_UI7.xml",
+	[ "urn:Belkin:device:lightswitch:1" ] = "D_WeMo1_Controllee1_UI7.xml",
 }
 UsnChildMap = {}
 ChildDevices = {}
@@ -50,6 +56,19 @@ function debug(s, level)
 	if (level == nil) then level = 1 end
 	if (level <= Debug) then
 		luup.log(s)
+	end
+end
+
+local function checkVersion()
+	local ui7Check = luup.variable_get(SID, "UI7Check", lug_device) or ""
+	if ui7Check == "" then
+		luup.variable_set(SID, "UI7Check", "false", lug_device)
+		ui7Check = "false"
+	end
+	if( luup.version_branch == 1 and luup.version_major == 7 and ui7Check == "false") then
+		luup.variable_set(SID, "UI7Check", "true", lug_device)
+		luup.attr_set("device_json", "D_WeMo1_UI7.json", lug_device)
+		luup.reload()
 	end
 end
 
@@ -347,7 +366,10 @@ end
 function subscribeToDevice(eventSubURL, renewalSID, timeout)
 	-- Learn Vera's IP address.
 	local s = socket.udp()
-	local remoteHost = eventSubURL:match("://(.-)[/:]")
+	local remoteHost = eventSubURL:match("://(.-)[/:]") or ""
+	if remoteHost == "" then
+		return nil, "UNKNOWN"
+	end
 	debug("Remote host is " .. remoteHost, 3)
 	s:setpeername(remoteHost, 80) -- Any port will do, not actually connecting.
 	local myAddress = s:getsockname()
@@ -574,7 +596,7 @@ function subscribeToAllDevices()
 	-- Since Proxy API version 1: accepts NOTIFY from device.
 	if (proxyVersionAtLeast(1)) then
 		for childId, d in pairs(ChildDevices) do
-			local eventSubURL = url.absolute(d.location, d.eventSubURL)
+			local eventSubURL = url.absolute(d.location, d.eventSubURL) or ""
 			debug("Subscribing to events at " .. eventSubURL, 2)
 			-- Ask the device to inform the proxy about status changes.
 			local sid, duration = subscribeToDevice(eventSubURL, nil, 5)
@@ -633,24 +655,7 @@ function reentry()
 	schedule()
 end
 
--- initialize(lul_device)
--- Entry point for the plugin.
--- Parameters:
---   lul_device: The top-level device Id.
-function initialize(lul_device)
-	debug("Starting WeMo plugin (device " .. lul_device .. ")", 0)
-
-	Device = lul_device
-
-	-- Go quiet with debug messages unless debugging enabled.
-	Debug = luup.variable_get(ServiceId, "Debug", Device)
-	if (Debug == nil) then
-		Debug = 0
-		luup.variable_set(ServiceId, "Debug", "0", Device)
-	else
-		Debug = tonumber(Debug)
-	end
-
+local function createChildDevices()
 	-- Create child devices.
 	-- Use information collected from previous runs.
 	local childCount = luup.variable_get(ServiceId, "ChildCount", Device)
@@ -661,7 +666,7 @@ function initialize(lul_device)
 		childCount = tonumber(childCount)
 	end
 	debug("Creating up to " .. childCount .. " children", 2)
-	local children = luup.chdev.start(Device)
+	local children = g_appendPtr
 	for child = 1, childCount do
 		-- UPnP device type.
 		local childType = luup.variable_get(ServiceId, "Child" .. child .. "Type", Device)
@@ -683,14 +688,48 @@ function initialize(lul_device)
 			-- Keep local munged copies of the device's UPnP files,
 			-- because we need additional elements (<staticJson>) and
 			-- want to filter out services we can't use.
-			local childDeviceFile = TypeDeviceFileMap[childType]
-			debug("Creating child " .. childUSN .. " (" .. childName .. ") as " .. childType, 2)
-			luup.chdev.append(Device, children, childUSN, childName, childType,
-				childDeviceFile, "I_WeMo1.xml", childParameters, false)
+			local isUI7 = luup.variable_get(SID, "UI7Check", lug_device) or ""
+			if isUI7 == "" then
+				luup.variable_set(SID, "UI7Check", "false", lug_device)
+				isUI7 = "false"
+			end
+			if isUI7 == "true" then
+				local childDeviceFile = TypeDeviceFileMap_UI7[childType]
+				debug("Creating child " .. childUSN .. " (" .. childName .. ") as " .. childType, 2)
+				luup.chdev.append(Device, children, childUSN, childName, "", childDeviceFile, "I_WeMo1.xml", childParameters, false)
+			else
+				local childDeviceFile = TypeDeviceFileMap[childType]
+				debug("Creating child " .. childUSN .. " (" .. childName .. ") as " .. childType, 2)
+				luup.chdev.append(Device, children, childUSN, childName, "", childDeviceFile, "I_WeMo1.xml", childParameters, false)
+			end
 		end
 	end
-	luup.chdev.sync(Device, children)
+end
 
+-- initialize(lul_device)
+-- Entry point for the plugin.
+-- Parameters:
+--   lul_device: The top-level device Id.
+function initialize(lul_device)
+	debug("Starting WeMo plugin (device " .. lul_device .. ")", 0)
+
+	Device = lul_device
+	
+	checkVersion() 
+	
+	-- Go quiet with debug messages unless debugging enabled.
+	Debug = luup.variable_get(ServiceId, "Debug", Device)
+	if (Debug == nil) then
+		Debug = 0
+		luup.variable_set(ServiceId, "Debug", "0", Device)
+	else
+		Debug = tonumber(Debug)
+	end
+	
+	g_appendPtr = luup.chdev.start(Device)
+	createChildDevices()
+	luup.chdev.sync(Device, g_appendPtr)
+	
 	-- If list of child devices changed, Luup engine will restart here.
 
 	-- Build child list.
@@ -806,16 +845,14 @@ function initialize(lul_device)
 			luup.set_failure(true, i)
 		end
 	end
+	
 	if (unaccountedDevices > 0) then
 		-- return false, "Previously found WeMo devices not found.", string.format("%s[%d]", luup.devices[Device].description, Device)
 	end
-
 	-- Ask all devices to tell the UPnP proxy process when their state changes.
 	subscribeToAllDevices()
-
 	-- Start scheduler for future actions.
 	schedule()
-
 	return true
 end
 
@@ -885,7 +922,7 @@ function upnpCallAction(location, serviceType, action, parameters, values)
 	-- Form the request to set the switch.
 	local parameterList = {}
 	for i = 1, #parameters do
-		table.insert(parameterList, 
+		table.insert(parameterList,
 			"<" .. parameters[i] .. ">" .. values[i] .. "</" .. parameters[i] .. ">\n")
 	end
 	local requestBody = "<?xml version=\"1.0\"?>\n" ..
@@ -934,7 +971,7 @@ function handleSetTarget(lul_device, newTargetValue)
 			local controlURL = url.absolute(ChildDevices[lul_device].location, ChildDevices[lul_device].controlURL)
 			local serviceType = ChildDevices[lul_device].serviceType
 
-			local response, code = upnpCallAction(controlURL, serviceType, "SetBinaryState", { "BinaryState" }, { newTargetValue }) 
+			local response, code = upnpCallAction(controlURL, serviceType, "SetBinaryState", { "BinaryState" }, { newTargetValue })
 			if (response == nil) then
 				debug("Failed to set target: " .. code, 2)
 				return false

@@ -1,0 +1,52 @@
+{
+    "default_icon": "http://futzle.com/mios/wemo_50x50.png",
+    "inScene": "0",
+    "x": 2,
+    "y": 4,
+    "Tabs": [
+				{
+					"Label": {
+						"lang_tag": "configure",
+						"text": "Configure"
+					},
+					"Position": 1,
+					"TabType": "javascript",
+					"ScriptName": "J_WeMo1_UI7.js",
+					"Function": "WeMo.configuration"
+				},
+        {
+            "Label": {
+                "lang_tag": "advanced",
+                "text": "Advanced"
+            },
+            "Position": "2",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "advanced_device"
+        },
+        {
+            "Label": {
+                "lang_tag": "logs",
+                "text": "Logs"
+            },
+            "Position": "3",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "device_logs"
+        },
+        {
+            "Label": {
+                "lang_tag": "notifications",
+                "text": "Notifications"
+            },
+            "Position": "4",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "device_notifications"
+        }
+    ],
+    "DeviceType": "urn:schemas-futzle-com:device:WeMo:1",
+    "eventList2": [
+    ]
+}
+
