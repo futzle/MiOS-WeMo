@@ -60,16 +60,19 @@ Child devices follow the same conventions as other MiOS switches and sensors.
 Switches show their on/off status in the dashboard.  Clicking **On** or **Off** will change the state.
 
 Service variables:
+
 | Namespace | Variable name | Meaning |
 | --- | --- | --- |
 | urn:upnp-org:serviceId:SwitchPower1 | Status | **0** if switch is off; **1** if switch is on |
 
 Actions:
+
 | Namespace | Action name | Parameters | Meaning |
 | --- | --- | --- | --- |
 | urn:upnp-org:serviceId:SwitchPower1 | SetTarget | newTargetValue: **0** to turn switch off; **1** to turn switch on | Set the switch to the specified state |
 
 Events:
+
 | Name | Meaning |
 | --- | --- | --- |
 | A device is turned on or off | The switch status has changed from on to off, or from off to on |
@@ -79,17 +82,20 @@ Events:
 Sensors show their tripped status in the dashboard.  Clicking **Arm** or **Bypass** affects only the Vera internal state; it has no effect on the WeMo sensor and will not affect whether WeMo rules fire.
 
 Service variables:
+
 | Namespace | Variable name | Meaning |
 | --- | --- | --- |
 | urn:micasaverde-com:serviceId:SecuritySensor1 | Tripped | **0** if no motion detected; **1** if motion was detected in the last 2 seconds |
 | urn:micasaverde-com:serviceId:SecuritySensor1 | Armed | **0** the sensor is bypassed; **1** if the sensor is armed |
 
 Actions:
+
 | Namespace | Action name | Parameters | Meaning |
 | --- | --- | --- | --- |
 | urn:micasaverde-com:serviceId:SecuritySensor1 | SetArmed | newArmedValue: **0** to bypass the sensor; **1** to arm the sensor | Set the sensor's arm/bypass state |
 
 Events:
+
 | Name | Meaning |
 | --- | --- | 
 | A sensor (door/window/motion/etc.) is tripped | Fires when motion is detected |
