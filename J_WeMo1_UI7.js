@@ -30,10 +30,10 @@ var WeMo = (function (api) {
     // unique identifier for this plugin...
     var uuid = 'E451565B-B468-4E9E-8981-30DB4FD16F70';
     var myModule = {};
-	var device = api.getCpanelDeviceId();
-	function onBeforeCpanelClose(args) {
-        // do some cleanup...
-        console.log('handler for before cpanel close');
+		var device = api.getCpanelDeviceId();
+		function onBeforeCpanelClose(args) {
+			// do some cleanup...
+			console.log('handler for before cpanel close');
     }
 
     function init() {
@@ -46,12 +46,20 @@ var WeMo = (function (api) {
 		return string.replace(/&/g, '&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 	}
 
+	function setDeviceStateVariable(DEVICE,SID,VARIABLE,VALUE,TRASH)
+	{
+		api.setDeviceStateVariable(DEVICE, SID, VARIABLE, VALUE, {'dynamic': true});
+		api.setDeviceStateVariable(DEVICE, SID, VARIABLE, VALUE, {'dynamic': false});
+		//set_device_state(DEVICE, SID, VARIABLE, VALUE, 1);
+		//set_device_state(DEVICE, SID, VARIABLE, VALUE, 0);
+	}
+
 	// Remove an existing device.
 	function configurationRemoveChildDevice(device, index, button)
 	{
 		var btn = jQuery(button);
 		btn.attr('disabled', 'disabled');
-		api.setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + index + "Type", "", 0);
+		setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + index + "Type", "", 0);
 		btn.val("Removed");
 		jQuery('#wemo_saveChanges').show();
 	}
@@ -60,7 +68,7 @@ var WeMo = (function (api) {
 	{
 		var btn = jQuery(button);
 		var newState = btn.is(':checked');
-		api.setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "EnableMulticast", newState ? "1" : "0", 0);
+		setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "EnableMulticast", newState ? "1" : "0", 0);
 		if (!btn.is(':checked')) { jQuery('#wemo_scanResults').hide(); }
 		jQuery('#wemo_saveChanges').show();
 	}
@@ -82,14 +90,14 @@ var WeMo = (function (api) {
 	{
 		var deviceCount = api.getDeviceState(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", 0) - 0;
 		deviceCount++;
-		api.setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Name", name || "", 0);
-		api.setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Type", type || "", 0);
-		api.setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "USN", usn || "", 0);
+		setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Name", name || "");
+		setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Type", type || "");
+		setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "USN", usn || "");
 		if (host != undefined)
 		{
-			api.setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Host", host, 0);
+			setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + deviceCount + "Host", host);
 		}
-		api.setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", deviceCount, 0);
+		setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", deviceCount);
 	}
 
 	// Add a found device.
@@ -134,10 +142,11 @@ var WeMo = (function (api) {
 	function configuration(device){
 		try{
 			var html = '';
-			html += '<p id="wemo_saveChanges" style="display:none; font-weight: bold; text-align: center;">Close dialog and press SAVE to commit changes.</p>';
+//			html += '<p id="wemo_saveChanges" style="display:none; font-weight: bold; text-align: center;">Close dialog and press SAVE to commit changes.</p>';
+			html += '<p id="wemo_saveChanges" style="display:none; font-weight: bold; text-align: center;">Reload the LuaUPnP Engine to commit changes.</p>';
 
 			// List known child devices, with option to delete them.
-			var childDevices = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", 0) - 0;
+			var childDevices = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "ChildCount", {'dynamic':false}) - 0;
 
 			var actualChildDevices = 0;
 			var childHtml = '';
@@ -149,10 +158,10 @@ var WeMo = (function (api) {
 			for (i = 1; i <= childDevices; i++)
 			{
 				// Find the child in the device list (requires exhaustive search).
-				var childDeviceType = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "Type", 0);
+				var childDeviceType = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "Type", {'dynamic':false})||"";
 				if (childDeviceType == "") { continue; }
-				var childDeviceHost = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "Host", 0);
-				var childDeviceUSN = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "USN", 0);
+				var childDeviceHost = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "Host", {'dynamic':false});
+				var childDeviceUSN = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + i + "USN", {'dynamic':false});
 				var childRoom;
 				var childFound = false;
 				for (checkDevice in jsonp.ud.devices)
@@ -198,7 +207,7 @@ var WeMo = (function (api) {
 			if (actualChildDevices) { html += childHtml; }
 
 			// Scan for WeMo devices on the network.  Requires Multicast to be enabled.
-			var enableMulticast = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "EnableMulticast", 0);
+			var enableMulticast = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "EnableMulticast", {'dynamic':false});
 			if (enableMulticast == undefined) { enableMulticast = "1"; }
 			html += '<div style="border: black 1px solid; padding: 5px; margin: 5px;">';
 			html += '<div style="font-weight: bold; text-align: center;">Scan for WeMo devices</div>';
@@ -210,20 +219,20 @@ var WeMo = (function (api) {
 			// List unknown devices as candidates to add.
 			if (enableMulticast == "1")
 			{
-				var unknownDevices = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDeviceCount", 1) - 0;
+				var unknownDevices = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDeviceCount", {'dynamic':false}) - 0;
 				html += '<table id="wemo_scanResults" width="100%"><thead><th>Name&#xA0;(Serial&#xA0;number)</th><th>Type</th><th>IP&#xA0;Address</th><th>Action</th></thead>';
 				var i;
 				for (i = 1; i <= unknownDevices; i++)
 				{
 					html += '<tr>';
-					var unknownDeviceName = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Name", 1);
+					var unknownDeviceName = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Name", {'dynamic':false});
 					html += '<td>' + wemoEscapeHtml(unknownDeviceName) + '</td>';
-					var unknownDeviceType = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Type", 1);
+					var unknownDeviceType = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Type", {'dynamic':false});
 					html += '<td>' + (unknownDeviceType == "urn:Belkin:device:sensor:1" ? "Sensor" :
 						unknownDeviceType == "urn:Belkin:device:controllee:1" ? "Appliance Switch" :
 						unknownDeviceType == "urn:Belkin:device:lightswitch:1" ? "Light Switch" :
 						wemoEscapeHtml(unknownDeviceType)) + '</td>';
-					var unknownDeviceAddress = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Host", 1);
+					var unknownDeviceAddress = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Host", {'dynamic':false});
 					html += '<td>' + wemoEscapeHtml(unknownDeviceAddress) + '</td>';
 					html += '<td><input type="button" value="Add Dynamic" onClick="WeMo.configurationAddFoundDevice('
 					 + device + ',' + i + ',this,false)"/>&#xA0;';
@@ -242,7 +251,7 @@ var WeMo = (function (api) {
 			html += '</div>';
 
 			// Notify user if the UPnP Proxy is not answering.
-			var proxyApiVersion = get_device_state(device, "urn:futzle-com:serviceId:WeMo1", "ProxyApiVersion", 1);
+			var proxyApiVersion = api.getDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "ProxyApiVersion", {'dynamic':false});
 			if (proxyApiVersion == undefined || proxyApiVersion == "")
 			{
 				html += '<div style="margin: 5px;"><p>UPnP Proxy is not running. Instant updates will not happen.  More information <a target="_new" href="http://code.mios.com/trac/mios_upnp-event-proxy/">here</a>.</p></div>';
