@@ -223,6 +223,7 @@ function createXpathParser(targets)
 	local sink = function(chunk, err)
 		if (chunk == nil) then
 			debug("sink: end of file", 4)
+			xmlParser:parse()
 			xmlParser:close()
 			return nil
 		end
