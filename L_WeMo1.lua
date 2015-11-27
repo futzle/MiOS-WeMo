@@ -843,8 +843,8 @@ function initialize(lul_device)
 	for i, d in pairs(ChildDevices) do
 		if (not d.found) then
 			unaccountedDevices = unaccountedDevices + 1
-			luup.set_failure(true, i)
 		end
+		luup.set_failure(not d.found, i)
 	end
 	
 	if (unaccountedDevices > 0) then
