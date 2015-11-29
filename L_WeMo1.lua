@@ -48,14 +48,14 @@ FutureActionQueue = {}
 
 -- Debug levels:
 -- 0: None except startup message.
--- 1: Errors that prevent the plugin from functioning.
+-- 1: Errors that prevent the plugin from functioning (red).
 -- 2: UPnP status information.
 -- 3: UPnP request and response bodies.
 -- 4: XML parsing.
 function debug(s, level)
 	if (level == nil) then level = 1 end
 	if (level <= Debug) then
-		luup.log(s)
+		luup.log(s,level) --added some colour
 	end
 end
 
