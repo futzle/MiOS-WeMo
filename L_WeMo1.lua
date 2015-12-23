@@ -55,7 +55,7 @@ FutureActionQueue = {}
 function debug(s, level)
 	if (level == nil) then level = 1 end
 	if (level <= Debug) then
-		luup.log(s,level) --added some colour
+		luup.log(s)
 	end
 end
 
