@@ -48,7 +48,7 @@ FutureActionQueue = {}
 
 -- Debug levels:
 -- 0: None except startup message.
--- 1: Errors that prevent the plugin from functioning.
+-- 1: Errors that prevent the plugin from functioning (red).
 -- 2: UPnP status information.
 -- 3: UPnP request and response bodies.
 -- 4: XML parsing.
@@ -223,6 +223,7 @@ function createXpathParser(targets)
 	local sink = function(chunk, err)
 		if (chunk == nil) then
 			debug("sink: end of file", 4)
+			xmlParser:parse()
 			xmlParser:close()
 			return nil
 		end
@@ -842,8 +843,8 @@ function initialize(lul_device)
 	for i, d in pairs(ChildDevices) do
 		if (not d.found) then
 			unaccountedDevices = unaccountedDevices + 1
-			luup.set_failure(true, i)
 		end
+		luup.set_failure(not d.found, i)
 	end
 	
 	if (unaccountedDevices > 0) then
