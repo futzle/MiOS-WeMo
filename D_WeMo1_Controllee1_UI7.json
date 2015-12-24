@@ -53,7 +53,7 @@
         {
             "ControlGroup": "1",
             "ControlType": "multi_state_button",
-            "top": "-1.2",
+            "top": "0",
             "left": "1",
             "states": [
             {
