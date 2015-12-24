@@ -243,5 +243,5 @@
             {}
         }]
     }],
-    "DeviceType": "urn:schemas-futzle-com:device:WeMoControllee:1"
+    "device_type": "urn:schemas-futzle-com:device:WeMoControllee:1"
 }
