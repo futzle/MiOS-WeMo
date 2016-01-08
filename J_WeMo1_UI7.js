@@ -46,17 +46,34 @@ var WeMo = (function (api) {
 		return string.replace(/&/g, '&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 	}
 
+    function ShowStatus(text, error)
+    {
+    	if (!error)
+    	{
+    		document.getElementById("status_display").style.backgroundColor = "#90FF90";
+    		document.getElementById("status_display").innerHTML = text;
+    	}
+    	else
+    	{
+    		document.getElementById("status_display").style.backgroundColor = "#FF9090";
+    		document.getElementById("status_display").innerHTML = text;
+    	}
+    }
+
 	function setDeviceStateVariable(DEVICE,SID,VARIABLE,VALUE,TRASH)
 	{
-		api.setDeviceStateVariable(DEVICE, SID, VARIABLE, VALUE, {'dynamic': true});
-		api.setDeviceStateVariable(DEVICE, SID, VARIABLE, VALUE, {'dynamic': false});
-		//set_device_state(DEVICE, SID, VARIABLE, VALUE, 1);
-		//set_device_state(DEVICE, SID, VARIABLE, VALUE, 0);
+		api.setDeviceStatePersistent(DEVICE,SID,VARIABLE,VALUE,
+		{
+			'onSuccess':function(){ShowStatus('Data updated', false);},
+			'onFailure':function(){ShowStatus("Failed to update data. Reload LuuP and try again", true);}
+		});
 	}
+
+
 
 	// Remove an existing device.
 	function configurationRemoveChildDevice(device, index, button)
-	{
+  	{
 		var btn = jQuery(button);
 		btn.attr('disabled', 'disabled');
 		setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1", "Child" + index + "Type", "", 0);
@@ -142,7 +159,8 @@ var WeMo = (function (api) {
 	function configuration(device){
 		try{
 			var html = '';
-//			html += '<p id="wemo_saveChanges" style="display:none; font-weight: bold; text-align: center;">Close dialog and press SAVE to commit changes.</p>';
+
+      html += '<p id="status_display" style="width:100%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:black"></div>';
 			html += '<p id="wemo_saveChanges" style="display:none; font-weight: bold; text-align: center;">Reload the LuaUPnP Engine to commit changes.</p>';
 
 			// List known child devices, with option to delete them.
@@ -151,6 +169,7 @@ var WeMo = (function (api) {
 			var actualChildDevices = 0;
 			var childHtml = '';
 			var dynamicCount = 0;
+
 			childHtml += '<div style="border: black 1px solid; padding: 5px; margin: 5px;">';
 			childHtml += '<div style="font-weight: bold; text-align: center;">Existing WeMo devices</div>';
 			childHtml += '<table width="100%"><thead><th>Name</th><th>Type</th><th>IP&#xA0;Address</th><th>Room</th><th>Action</th></thead>';
