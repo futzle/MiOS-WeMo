@@ -53,10 +53,14 @@ var WeMo = (function(api)
 
 	function ShowStatus(text, error)
 	{
+
+		text +=
+			'<input type="button" value="Reload Luup" onClick="WeMo.doReload()"/>';
+
 		if (!error)
 		{
 			document.getElementById("wemo_saveChanges")
-				.style.backgroundColor = "#90FF90";
+				.style.backgroundColor = "#00A652";
 			document.getElementById("wemo_saveChanges")
 				.innerHTML = text;
 		}
@@ -75,12 +79,13 @@ var WeMo = (function(api)
 		{
 			'onSuccess': function()
 			{
-				ShowStatus('Data updated, Reload LuuP Engine  to commit changes.',
+				ShowStatus('Data updated, Reload LuuP Engine  to commit changes.  ',
 					false);
 			},
 			'onFailure': function()
 			{
-				ShowStatus("Failed to update data. Reload LuuP Engine and try again",
+				ShowStatus(
+					'Failed to update data, Reload LuuP Engine and try again.  ',
 					true);
 			}
 		});
@@ -204,7 +209,7 @@ var WeMo = (function(api)
 		addManualRow(device, 'wemo_addManual');
 	}
 
-	function doReload(deviceID)
+	function doReload(device)
 	{
 		var requestURL = data_request_url + 'id=lu_action';
 		requestURL +=
@@ -222,12 +227,8 @@ var WeMo = (function(api)
 		{
 			var html = '';
 			html +=
-				'<p id="wemo_saveChanges" style="display:none; table-layout:fixed; text-align:center; color:black"></p>';
-			html +=
-				'<input type="button" value="Reload Luup" onClick="WeMo.doReload(' +
-				device + ')"/>';
-			//html +=
-			//'<p id="wemo_saveChanges" style="display:none; font-weight: bold; text-align: center;">Reload the LuaUPnP Engine to commit changes.';
+				'<p id="wemo_saveChanges" style="display:none; table-layout:fixed; color:black"></p>';
+
 			// List known child devices, with option to delete them.
 			var childDevices = api.getDeviceStateVariable(device,
 				"urn:futzle-com:serviceId:WeMo1", "ChildCount",
