@@ -54,22 +54,31 @@ var WeMo = (function(api)
 	function ShowStatus(text, error)
 	{
 
-		text +=
+		var html = ''
+		html =
 			'<input type="button" value="Reload Luup" onClick="WeMo.doReload()"/>';
 
 		if (!error)
 		{
-			document.getElementById("wemo_saveChanges")
+			document.getElementById("wemo_saveChanges_text")
 				.style.backgroundColor = "#00A652";
-			document.getElementById("wemo_saveChanges")
+			document.getElementById("wemo_saveChanges_text")
 				.innerHTML = text;
+			document.getElementById("wemo_saveChanges_button")
+				.style.backgroundColor = "#00A652";
+			document.getElementById("wemo_saveChanges_button")
+				.innerHTML = html;
 		}
 		else
 		{
-			document.getElementById("wemo_saveChanges")
+			document.getElementById("wemo_saveChanges_text")
 				.style.backgroundColor = "#FF9090";
-			document.getElementById("wemo_saveChanges")
+			document.getElementById("wemo_saveChanges_text")
 				.innerHTML = text;
+			document.getElementById("wemo_saveChanges_button")
+				.style.backgroundColor = "#FF9090";
+			document.getElementById("wemo_saveChanges_button")
+				.innerHTML = html;
 		}
 	}
 
@@ -227,7 +236,9 @@ var WeMo = (function(api)
 		{
 			var html = '';
 			html +=
-				'<p id="wemo_saveChanges" style="display:none; table-layout:fixed; color:black"></p>';
+				'<table width="100%" style="border-collapse: collapse"><tbody><tr><th  id="wemo_saveChanges_text"></th><th id="wemo_saveChanges_button"></th></tr></tbody>';
+			html +=
+				'</table>';
 
 			// List known child devices, with option to delete them.
 			var childDevices = api.getDeviceStateVariable(device,
