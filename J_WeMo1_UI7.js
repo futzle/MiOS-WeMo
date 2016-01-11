@@ -88,13 +88,13 @@ var WeMo = (function(api)
 		{
 			'onSuccess': function()
 			{
-				ShowStatus('Data updated, Reload LuuP Engine  to commit changes.  ',
+				ShowStatus('Data updated, Reload LuuP Engine  to commit changes.',
 					false);
 			},
 			'onFailure': function()
 			{
 				ShowStatus(
-					'Failed to update data, Reload LuuP Engine and try again.  ',
+					'Failed to update data, Reload LuuP Engine and try again.',
 					true);
 			}
 		});
@@ -236,7 +236,7 @@ var WeMo = (function(api)
 		{
 			var html = '';
 			html +=
-				'<table width="100%" style="border-collapse: collapse"><tbody><tr><td id="wemo_saveChanges_text" align = "left"></td><td id="wemo_saveChanges_button" align = "center"></td></tr></tbody>';
+				'<table width="100%" style="border-collapse: collapse"><tbody><tr><td id="wemo_saveChanges_text" align = "center"></td><td id="wemo_saveChanges_button" align = "center"></td></tr></tbody>';
 			html +=
 				'</table>';
 
