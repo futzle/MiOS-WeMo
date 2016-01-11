@@ -26,7 +26,6 @@
  */
 var WeMo = (function(api)
 {
-
 	// unique identifier for this plugin...
 	var uuid = 'E451565B-B468-4E9E-8981-30DB4FD16F70';
 	var myModule = {};
@@ -54,19 +53,32 @@ var WeMo = (function(api)
 
 	function ShowStatus(text, error)
 	{
+
+		var html = ''
+		html =
+			'<input type="button" value="Reload Luup" onClick="WeMo.doReload()"/>';
+
 		if (!error)
 		{
-			document.getElementById("status_display")
-				.style.backgroundColor = "#90FF90";
-			document.getElementById("status_display")
+			document.getElementById("wemo_saveChanges_text")
+				.style.backgroundColor = "#00A652";
+			document.getElementById("wemo_saveChanges_text")
 				.innerHTML = text;
+			document.getElementById("wemo_saveChanges_button")
+				.style.backgroundColor = "#00A652";
+			document.getElementById("wemo_saveChanges_button")
+				.innerHTML = html;
 		}
 		else
 		{
-			document.getElementById("status_display")
+			document.getElementById("wemo_saveChanges_text")
 				.style.backgroundColor = "#FF9090";
-			document.getElementById("status_display")
+			document.getElementById("wemo_saveChanges_text")
 				.innerHTML = text;
+			document.getElementById("wemo_saveChanges_button")
+				.style.backgroundColor = "#FF9090";
+			document.getElementById("wemo_saveChanges_button")
+				.innerHTML = html;
 		}
 	}
 
@@ -76,17 +88,17 @@ var WeMo = (function(api)
 		{
 			'onSuccess': function()
 			{
-				ShowStatus('Data updated', false);
+				ShowStatus('Data updated, Reload LuuP Engine  to commit changes.',
+					false);
 			},
 			'onFailure': function()
 			{
-				ShowStatus("Failed to update data. Reload LuuP and try again", true);
+				ShowStatus(
+					'Failed to update data, Reload LuuP Engine and try again.',
+					true);
 			}
 		});
 	}
-
-
-
 	// Remove an existing device.
 	function configurationRemoveChildDevice(device, index, button)
 	{
@@ -126,11 +138,9 @@ var WeMo = (function(api)
 			'<input type="button" value="Add Static" onClick="WeMo.configurationAddManualDevice(' +
 			device + ',this)"/>';
 		html += '</p>';
-
 		jQuery('#' + node)
 			.append(html);
 	}
-
 	// Add a found or manual device.
 	function configurationAddDevice(device, name, type, usn, host)
 	{
@@ -151,14 +161,12 @@ var WeMo = (function(api)
 		setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1",
 			"ChildCount", deviceCount);
 	}
-
 	// Add a found device.
 	function configurationAddFoundDevice(device, index, button, static)
 	{
 		var btn = jQuery(button);
 		btn.parent('input')
 			.attr('disabled', 'disabled');
-
 		var unknownDeviceName = api.getDeviceState(device,
 			"urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + index + "Name", 0);
 		var unknownDeviceType = api.getDeviceState(device,
@@ -177,12 +185,10 @@ var WeMo = (function(api)
 			configurationAddDevice(device, unknownDeviceName, unknownDeviceType,
 				unknownDeviceUSN, undefined);
 		}
-
 		btn.val("Added");
 		jQuery('#wemo_saveChanges')
 			.show();
 	}
-
 	// Add a manual device.
 	function configurationAddManualDevice(device, button)
 	{
@@ -212,16 +218,27 @@ var WeMo = (function(api)
 		addManualRow(device, 'wemo_addManual');
 	}
 
+	function doReload(device)
+	{
+		var requestURL = data_request_url + 'id=lu_action';
+		requestURL +=
+			'&serviceId=urn:micasaverde-com:serviceId:HomeAutomationGateway1&timestamp=' +
+			new Date()
+			.getTime() + '&action=Reload';
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.open("GET", requestURL, false);
+		xmlHttp.send(null);
+	}
+
 	function configuration(device)
 	{
 		try
 		{
 			var html = '';
-
 			html +=
-				'<p id="status_display" style="width:100%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:black"></div>';
+				'<table width="100%" style="border-collapse: collapse"><tbody><tr><td id="wemo_saveChanges_text" style= "font-weight: bold; text-align: center;"></td><td id="wemo_saveChanges_button" style= "text-align: center;"></td></tr></tbody>';
 			html +=
-				'<p id="wemo_saveChanges" style="display:none; font-weight: bold; text-align: center;">Reload the LuaUPnP Engine to commit changes.</p>';
+				'</table>';
 
 			// List known child devices, with option to delete them.
 			var childDevices = api.getDeviceStateVariable(device,
@@ -229,11 +246,9 @@ var WeMo = (function(api)
 				{
 					'dynamic': false
 				}) - 0;
-
 			var actualChildDevices = 0;
 			var childHtml = '';
 			var dynamicCount = 0;
-
 			childHtml +=
 				'<div style="border: black 1px solid; padding: 5px; margin: 5px;">';
 			childHtml +=
@@ -317,7 +332,6 @@ var WeMo = (function(api)
 			{
 				html += childHtml;
 			}
-
 			// Scan for WeMo devices on the network.  Requires Multicast to be enabled.
 			var enableMulticast = api.getDeviceStateVariable(device,
 				"urn:futzle-com:serviceId:WeMo1", "EnableMulticast",
@@ -337,7 +351,6 @@ var WeMo = (function(api)
 				(dynamicCount ? ' disabled="disabled"' : '') +
 				' onclick="WeMo.setEnableMulticast(' + device +
 				', this)">&#xA0;Enable scan for WeMo devices on LAN</p>';
-
 			// List unknown devices as candidates to add.
 			if (enableMulticast == "1")
 			{
@@ -387,15 +400,12 @@ var WeMo = (function(api)
 				html += '</table>';
 			}
 			html += '</div>';
-
 			// Allow manual adding of device at static address.
 			html +=
 				'<div id="wemo_addManual" style="border: black 1px solid; padding: 5px; margin: 5px;">';
 			html +=
 				'<div style="font-weight: bold; text-align: center;">Manually add WeMo device</div>';
-
 			html += '</div>';
-
 			// Notify user if the UPnP Proxy is not answering.
 			var proxyApiVersion = api.getDeviceStateVariable(device,
 				"urn:futzle-com:serviceId:WeMo1", "ProxyApiVersion",
@@ -412,7 +422,6 @@ var WeMo = (function(api)
 				html += '<div style=" margin: 5px;"><p>UPnP Proxy running (API version ' +
 					wemoEscapeHtml(proxyApiVersion) + ')</p></div>';
 			}
-
 			api.setCpanelContent(html);
 			addManualRow(device, 'wemo_addManual');
 		}
@@ -421,7 +430,6 @@ var WeMo = (function(api)
 			Utils.logError('Error in WeMo.configuration(): ' + e);
 		}
 	}
-
 	myModule = {
 		uuid: uuid,
 		init: init,
@@ -429,8 +437,9 @@ var WeMo = (function(api)
 		configurationAddManualDevice: configurationAddManualDevice,
 		configurationRemoveChildDevice: configurationRemoveChildDevice,
 		configurationAddFoundDevice: configurationAddFoundDevice,
+		setEnableMulticast: setEnableMulticast,
+		doReload: doReload,
 		configuration: configuration
 	};
-
 	return myModule;
 })(api);
