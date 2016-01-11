@@ -236,7 +236,7 @@ var WeMo = (function(api)
 		{
 			var html = '';
 			html +=
-				'<table width="100%" style="border-collapse: collapse"><tbody><tr><td id="wemo_saveChanges_text" align = "left"></td><td id="wemo_saveChanges_button" lign = "center"></td></tr></tbody>';
+				'<table width="100%" style="border-collapse: collapse"><tbody><tr><td id="wemo_saveChanges_text" align = "left"></td><td id="wemo_saveChanges_button" align = "center"></td></tr></tbody>';
 			html +=
 				'</table>';
 
