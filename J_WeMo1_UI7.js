@@ -46,6 +46,14 @@ var WeMo = (function(api)
 
 	function wemoEscapeHtml(string)
 	{
+		if(typeof string == 'boolean') {
+			string = string.toString()
+    		}
+
+		if(typeof string !== 'string') {
+			throw new Error('only string parameter supported!');
+    		}
+    		
 		return string.replace(/&/g, '&amp;')
 			.replace(/</g, '&lt;')
 			.replace(/>/g, '&gt;');
