@@ -35,11 +35,13 @@ TypeDeviceFileMap = {
 	[ "urn:Belkin:device:controllee:1" ] = "D_WeMo1_Controllee1.xml",
 	[ "urn:Belkin:device:sensor:1" ] = "D_WeMo1_Sensor1.xml",
 	[ "urn:Belkin:device:lightswitch:1" ] = "D_WeMo1_Controllee1.xml",
+	[ "urn:Belkin:device:insight:1" ] = "D_WeMo1_Controllee1.xml"
 }
 TypeDeviceFileMap_UI7 = {
 	[ "urn:Belkin:device:controllee:1" ] = "D_WeMo1_Controllee1_UI7.xml",
 	[ "urn:Belkin:device:sensor:1" ] = "D_WeMo1_Sensor1_UI7.xml",
 	[ "urn:Belkin:device:lightswitch:1" ] = "D_WeMo1_Controllee1_UI7.xml",
+	[ "urn:Belkin:device:insight:1" ] = "D_WeMo1_Controllee1_UI7.xml"
 }
 UsnChildMap = {}
 ChildDevices = {}
@@ -860,15 +862,17 @@ end
 -- handleNotifyBinaryState(lul_device, binaryState, sid)
 -- Invoked by the UPnP proxy when it learns that a state (switch, sensor) has changed.
 function handleNotifyBinaryState(lul_device, binaryState, sid)
-	debug("Setting BinaryState = " .. binaryState .. " for device " .. lul_device, 2)
+	local status = string.match(binaryState, "%d+")
+	status = (tonumber(status) == 8) and 1 or status
+	debug("Setting BinaryState = " .. status .. " for device " .. lul_device, 2)
 	if (ChildDevices[lul_device] and sid == ChildDevices[lul_device].sid) then
 		local childDeviceType = luup.devices[lul_device].device_type
 		if (childDeviceType == "urn:schemas-futzle-com:device:WeMoControllee:1") then
 			-- Switch (Appliance or Light).
-			luup.variable_set("urn:upnp-org:serviceId:SwitchPower1", "Status", binaryState, lul_device)
+			luup.variable_set("urn:upnp-org:serviceId:SwitchPower1", "Status", status, lul_device)
 		elseif (childDeviceType == "urn:schemas-futzle-com:device:WeMoSensor:1") then
 			-- Sensor.
-			luup.variable_set("urn:micasaverde-com:serviceId:SecuritySensor1", "Tripped", binaryState, lul_device)
+			luup.variable_set("urn:micasaverde-com:serviceId:SecuritySensor1", "Tripped", status, lul_device)
 		end
 		return true
 	end
@@ -978,13 +982,15 @@ function handleSetTarget(lul_device, newTargetValue)
 				return false
 			else
 				debug("SetBinaryState confirmed", 2)
-				if (response.BinaryState == newTargetValue) then
-					debug("New BinaryState is " .. response.BinaryState, 2)
+        			local status = string.match((response.BinaryState or "Error"), "%d+") or "Error"
+        			status = (tonumber(status) == 8) and 1 or status
+				if (status == newTargetValue) then
+					debug("New BinaryState is " .. status, 2)
 					-- Update the switch device to match the requested new state.
 					-- (It'll send a confirmation event shortly anyway, but users are impatient.)
-					luup.variable_set("urn:upnp-org:serviceId:SwitchPower1", "Status", response.BinaryState, lul_device)
+					luup.variable_set("urn:upnp-org:serviceId:SwitchPower1", "Status", status, lul_device)
 				else
-					debug("Unexpected BinaryState: " .. response.BinaryState, 1)
+					debug("Unexpected BinaryState: " .. status , 1)
 				end
 				return true
 			end
