@@ -10,6 +10,11 @@
 			<dataType>String</dataType>
 			<defaultValue>0</defaultValue>
 		</stateVariable>
+		<stateVariable sendEvents="yes">
+			<name>PowerThreshold</name>
+			<dataType>String</dataType>
+			<defaultValue>0</defaultValue>
+		</stateVariable>
 	</serviceStateTable>
 	<actionList>
 		<action>
@@ -34,6 +39,17 @@
 					<retval />
 					<name>InstantPower</name>
 					<relatedStateVariable>InstantPower</relatedStateVariable>
+					<direction>out</direction>
+				</argument>
+			</argumentList>
+		</action>
+		<action>
+			<name>GetPowerThreshold</name>
+			<argumentList>
+				<argument>
+					<retval />
+					<name>PowerThreshold</name>
+					<relatedStateVariable>PowerThreshold</relatedStateVariable>
 					<direction>out</direction>
 				</argument>
 			</argumentList>
