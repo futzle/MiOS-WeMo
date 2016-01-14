@@ -1007,12 +1007,15 @@ function handleSetTarget(lul_device, newTargetValue)
 			if (response == nil) then
 				debug("Failed to set target: " .. code, 2)
 				return false
+			elseif (response == "" and code == 200) then
+				debug("Insight returns empty string: " .. code, 2)
+				return true
 			else
 				debug("SetBinaryState confirmed", 2)
 				
 				local binaryStateTable =   {}
 				local i = 1
-				for number in string.gmatch(response, "-?%d*%.?%d+") do 
+				for number in string.gmatch(response.BinaryState, "-?%d*%.?%d+") do 
 					binaryStateTable[(binaryStateConvertTable[i])] = number
 					i = i+1
 				end
