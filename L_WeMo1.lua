@@ -48,6 +48,20 @@ ChildDevices = {}
 ProxyApiVersion = nil
 FutureActionQueue = {}
 
+local binaryStateConvertTable = {
+	"Status",
+	"LastChange",
+	"OnFor",
+	"OnToday",
+	"OnTotal",
+	"TimePeriod",
+	"AveragePower",
+	"CurrentMW",
+	"TodayMW",
+	"TotalMW",
+	"PowerThreshold"
+}
+
 -- Debug levels:
 -- 0: None except startup message.
 -- 1: Errors that prevent the plugin from functioning (red).
@@ -862,8 +876,15 @@ end
 -- handleNotifyBinaryState(lul_device, binaryState, sid)
 -- Invoked by the UPnP proxy when it learns that a state (switch, sensor) has changed.
 function handleNotifyBinaryState(lul_device, binaryState, sid)
-	local status = string.match(binaryState, "%d+")
-	status = (tonumber(status) == 8) and 1 or status
+	local binaryStateTable =   {}
+	local i = 1
+	for number in string.gmatch(binaryState, "-?%d*%.?%d+") do 
+		binaryStateTable[(binaryStateConvertTable[i])] = number
+		i = i+1
+	end
+        local status = string.match((binaryStateTable.Status or "Error"), "%d+") or "Error"
+	if (tonumber(status) == 8) then debug("WeMo Switch is in Standby", 2) end
+        status = (tonumber(status) == 8) and 1 or status
 	debug("Setting BinaryState = " .. status .. " for device " .. lul_device, 2)
 	if (ChildDevices[lul_device] and sid == ChildDevices[lul_device].sid) then
 		local childDeviceType = luup.devices[lul_device].device_type
@@ -982,7 +1003,15 @@ function handleSetTarget(lul_device, newTargetValue)
 				return false
 			else
 				debug("SetBinaryState confirmed", 2)
-        			local status = string.match((response.BinaryState or "Error"), "%d+") or "Error"
+				
+				local binaryStateTable =   {}
+				local i = 1
+				for number in string.gmatch(binaryState, "-?%d*%.?%d+") do 
+					binaryStateTable[(binaryStateConvertTable[i])] = number
+					i = i+1
+				end
+        			local status = string.match((binaryStateTable.Status or "Error"), "%d+") or "Error"
+	        		if (tonumber(status) == 8) then debug("WeMo Switch is in Standby", 2) end
         			status = (tonumber(status) == 8) and 1 or status
 				if (status == newTargetValue) then
 					debug("New BinaryState is " .. status, 2)
