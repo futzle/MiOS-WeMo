@@ -1,12 +1,17 @@
 <?xml version="1.0"?>
 <scpd xmlns="urn:schemas-upnp-org:service-1-0">
-  <specVersion>
-    <major>1</major>
-    <minor>0</minor>
-  </specVersion>
-  <serviceStateTable>
-  </serviceStateTable>
-  <actionList>
+	<specVersion>
+	<major>1</major>
+	<minor>0</minor>
+	</specVersion>
+	<serviceStateTable>
+		<stateVariable sendEvents="yes">
+			<name>InstantPower</name>
+			<dataType>String</dataType>
+			<defaultValue>0</defaultValue>
+		</stateVariable>
+	</serviceStateTable>
+	<actionList>
 		<action>
 			<name>notifyBinaryState</name>
 			<argumentList>
@@ -22,6 +27,17 @@
 				</argument>
 			</argumentList>
 		</action>
-  </actionList>
+		<action>
+			<name>GetPower</name>
+			<argumentList>
+				<argument>
+					<retval />
+					<name>InstantPower</name>
+					<relatedStateVariable>InstantPower</relatedStateVariable>
+					<direction>out</direction>
+				</argument>
+			</argumentList>
+		</action>
+	</actionList>
 </scpd>
 
