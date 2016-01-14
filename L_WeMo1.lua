@@ -1012,7 +1012,7 @@ function handleSetTarget(lul_device, newTargetValue)
 				
 				local binaryStateTable =   {}
 				local i = 1
-				for number in string.gmatch(binaryState, "-?%d*%.?%d+") do 
+				for number in string.gmatch(response, "-?%d*%.?%d+") do 
 					binaryStateTable[(binaryStateConvertTable[i])] = number
 					i = i+1
 				end
