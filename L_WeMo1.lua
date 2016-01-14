@@ -56,11 +56,13 @@ local binaryStateConvertTable = {
 	"OnTotal",
 	"TimePeriod",
 	"AveragePower",
-	"CurrentMW",
+	"InstantPower",
 	"TodayMW",
 	"TotalMW",
 	"PowerThreshold"
 }
+
+WEMOSID = "urn:futzle-com:serviceId:WeMo1"
 
 -- Debug levels:
 -- 0: None except startup message.
@@ -882,6 +884,10 @@ function handleNotifyBinaryState(lul_device, binaryState, sid)
 		binaryStateTable[(binaryStateConvertTable[i])] = number
 		i = i+1
 	end
+	if binaryStateTable.InstantPower then
+		luup.variable_set(WEMOSID, "InstantPower", binaryStateTable.InstantPower, lul_device)
+		luup.variable_set(WEMOSID, "PowerThreshold", binaryStateTable.PowerThreshold, lul_device)
+	end
         local status = string.match((binaryStateTable.Status or "Error"), "%d+") or "Error"
 	if (tonumber(status) == 8) then debug("WeMo Switch is in Standby", 2) end
         status = (tonumber(status) == 8) and 1 or status
@@ -1010,10 +1016,14 @@ function handleSetTarget(lul_device, newTargetValue)
 					binaryStateTable[(binaryStateConvertTable[i])] = number
 					i = i+1
 				end
+				if binaryStateTable.InstantPower then
+					luup.variable_set(WEMOSID, "InstantPower", binaryStateTable.InstantPower, lul_device)
+					luup.variable_set(WEMOSID, "PowerThreshold", binaryStateTable.PowerThreshold, lul_device)
+				end
         			local status = string.match((binaryStateTable.Status or "Error"), "%d+") or "Error"
 	        		if (tonumber(status) == 8) then debug("WeMo Switch is in Standby", 2) end
         			status = (tonumber(status) == 8) and 1 or status
-				if (status == newTargetValue) then
+        			if (status == newTargetValue) then
 					debug("New BinaryState is " .. status, 2)
 					-- Update the switch device to match the requested new state.
 					-- (It'll send a confirmation event shortly anyway, but users are impatient.)
