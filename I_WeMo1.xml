@@ -21,6 +21,20 @@ end
 			</run>
 		</action>
 		<action>
+			<serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
+			<name>GetPowerThreshold</name>
+			<run>
+				return (lul_settings.PowerThreshold)
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
+			<name>GetPower</name>
+			<run>
+				return (lul_settings.InstantPower)
+			</run>
+		</action>
+		<action>
 			<serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
 			<name>SetArmed</name>
 			<run>
