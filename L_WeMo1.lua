@@ -1007,8 +1007,8 @@ function handleSetTarget(lul_device, newTargetValue)
 			if (response == nil) then
 				debug("Failed to set target: " .. code, 2)
 				return false
-			elseif (response == "" and code == 200) then
-				debug("Insight returns empty string: " .. code, 2)
+			elseif (response ~= nil and code == 200) then
+				debug("Insight returns empty State string: " .. code, 2)
 				return true
 			else
 				debug("SetBinaryState confirmed", 2)
