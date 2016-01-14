@@ -21,13 +21,6 @@ end
 			</run>
 		</action>
 		<action>
-			<serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
-			<name>GetPowerThreshold</name>
-			<run>
-				return this_plugin.getPowerThreshold(lul_device, lul_settings.PowerThreshold, lul_settings.sid)
-			</run>
-		</action>
-		<action>
 			<serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
 			<name>SetArmed</name>
 			<run>
