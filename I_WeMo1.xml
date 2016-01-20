@@ -22,16 +22,9 @@ end
 		</action>
 		<action>
 			<serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
-			<name>GetPowerThreshold</name>
+			<name>notifyInsightParams</name>
 			<run>
-				return (lul_settings.PowerThreshold)
-			</run>
-		</action>
-		<action>
-			<serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
-			<name>GetPower</name>
-			<run>
-				return (lul_settings.InstantPower)
+				return this_plugin.handleNotifyInsightParams(lul_device, lul_settings.insightParams, lul_settings.sid)
 			</run>
 		</action>
 		<action>
