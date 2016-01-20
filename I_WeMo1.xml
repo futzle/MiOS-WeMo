@@ -1,5 +1,5 @@
 <implementation>
-	<functions>
+    <functions>
 function initialize (lul_device)
 	if (package.path:find ("/etc/cmh-ludl/?.lua;/etc/cmh-lu/?.lua", 1, true) == nil) then
 		package.path = package.path .. ";/etc/cmh-ludl/?.lua;/etc/cmh-lu/?.lua"
@@ -11,35 +11,35 @@ function initialize (lul_device)
 	return this_plugin.initialize (lul_device)
 end
 	</functions>
-  <startup>initialize</startup>
-  <actionList>
-		<action>
-			<serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
-			<name>notifyBinaryState</name>
-			<run>
-				return this_plugin.handleNotifyBinaryState(lul_device, lul_settings.binaryState, lul_settings.sid)
-			</run>
-		</action>
-		<action>
-			<serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
-			<name>notifyInsightParams</name>
-			<run>
-				return this_plugin.handleNotifyInsightParams(lul_device, lul_settings.insightParams, lul_settings.sid)
-			</run>
-		</action>
-		<action>
-			<serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
-			<name>SetArmed</name>
-			<run>
-				return this_plugin.handleSetArmed(lul_device, lul_settings.newArmedValue)
-			</run>
-		</action>	
-		<action>
-			<serviceId>urn:upnp-org:serviceId:SwitchPower1</serviceId>
-			<name>SetTarget</name>
-			<run>
-				return this_plugin.handleSetTarget(lul_device, lul_settings.newTargetValue)
-			</run>
-		</action>	
-  </actionList>
+    <startup>initialize</startup>
+    <actionList>
+        <action>
+            <serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
+            <name>notifyBinaryState</name>
+            <run>
+		return this_plugin.handleNotifyBinaryState(lul_device, lul_settings.binaryState, lul_settings.sid)
+	    </run>
+        </action>
+        <action>
+            <serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
+            <name>notifyInsightParams</name>
+            <run>
+		return this_plugin.handleNotifyInsightParams(lul_device, lul_settings.insightParams, lul_settings.sid)
+	    </run>
+        </action>
+        <action>
+            <serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
+            <name>SetArmed</name>
+            <run>
+		return this_plugin.handleSetArmed(lul_device, lul_settings.newArmedValue)
+	    </run>
+        </action>
+        <action>
+            <serviceId>urn:upnp-org:serviceId:SwitchPower1</serviceId>
+            <name>SetTarget</name>
+            <run>
+		return this_plugin.handleSetTarget(lul_device, lul_settings.newTargetValue)
+	    </run>
+        </action>
+    </actionList>
 </implementation>
