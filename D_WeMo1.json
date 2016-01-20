@@ -5,7 +5,8 @@
         "doc_manual": 1,
         "doc_version": 1,
         "doc_platform": 0,
-        "doc_page": "devices" },
+        "doc_page": "devices"
+    },
     "inScene": "0",
     "x": 2,
     "y": 4,
@@ -17,57 +18,53 @@
             },
             "Position": "0",
             "TabType": "flash",
-            "SceneGroup": [
-            ],
-            "ControlGroup": [
-            ],
+            "SceneGroup": [],
+            "ControlGroup": [],
             "Control": [
-                {
-                }
+                {}
             ]
         },
-	{
-		"Label": {
-			"lang_tag": "configure",
-			"text": "Configure"
-		},
-		"Position": 1,
-		"TabType": "javascript",
-		"ScriptName": "J_WeMo1.js",
-		"Function": "configuration"
-	},
+        {
+            "Label": {
+                "lang_tag": "configure",
+                "text": "Configure"
+            },
+            "Position": 1,
+            "TabType": "javascript",
+            "ScriptName": "J_WeMo1.js",
+            "Function": "configuration"
+        },
         {
             "Label": {
                 "lang_tag": "advanced",
-                "text": "Advanced" 
+                "text": "Advanced"
             },
             "Position": "2",
             "TabType": "javascript",
             "ScriptName": "shared.js",
-            "Function": "advanced_device" 
+            "Function": "advanced_device"
         },
         {
             "Label": {
                 "lang_tag": "logs",
-                "text": "Logs" 
+                "text": "Logs"
             },
             "Position": "3",
             "TabType": "javascript",
             "ScriptName": "shared.js",
-            "Function": "device_logs" 
+            "Function": "device_logs"
         },
         {
             "Label": {
                 "lang_tag": "notifications",
-                "text": "Notifications" 
+                "text": "Notifications"
             },
             "Position": "4",
             "TabType": "javascript",
             "ScriptName": "shared.js",
-            "Function": "device_notifications" 
+            "Function": "device_notifications"
         }
     ],
     "DeviceType": "urn:schemas-futzle-com:device:WeMo:1",
-    "eventList2": [
-    ]
+    "eventList2": []
 }
