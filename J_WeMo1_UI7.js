@@ -139,7 +139,8 @@ var WeMo = (function(api)
 		var html = '<p>';
 		html += 'Name&#xA0;<input type="text" class="wemo_name" size="16"/>&#xA0;';
 		html +=
-			'Type&#xA0;<select class="wemo_type"><option value="urn:Belkin:device:controllee:1">Appliance Switch</option><option value="urn:Belkin:device:sensor:1">Sensor</option><option value="urn:Belkin:device:lightswitch:1">Light Switch</option></select>&#xA0;';
+			'Type&#xA0;<select class="wemo_type"><option value="urn:Belkin:device:controllee:1">Appliance Switch</option>
+      <option value="urn:Belkin:device:insight:1">Insight Switch</option><option value="urn:Belkin:device:sensor:1">Sensor</option><option value="urn:Belkin:device:lightswitch:1">Light Switch</option></select>&#xA0;';
 		html +=
 			'IP&#xA0;Address&#xA0;<input type="text" class="wemo_host" size="15"/>&#xA0;';
 		html +=
@@ -315,10 +316,9 @@ var WeMo = (function(api)
 				}
 				childHtml += '<tr>';
 				childHtml += '<td>' + wemoEscapeHtml(childName) + '</td>';
-				childHtml += '<td>' + (childDeviceType == "urn:Belkin:device:sensor:1" ?
-					"Sensor" :
-					childDeviceType == "urn:Belkin:device:controllee:1" ?
-					"Appliance Switch" :
+				childHtml += '<td>' + (childDeviceType == "urn:Belkin:device:sensor:1" ? "Sensor" :
+					childDeviceType == "urn:Belkin:device:controllee:1" ?	"Appliance Switch" :
+          childDeviceType == "urn:Belkin:device:insight:1" ? "Insight Switch" :
 					childDeviceType == "urn:Belkin:device:lightswitch:1" ? "Light Switch" :
 					wemoEscapeHtml(childDeviceType)) + '</td>';
 				if (childDeviceHost == undefined)
@@ -384,12 +384,10 @@ var WeMo = (function(api)
 						{
 							'dynamic': false
 						});
-					html += '<td>' + (unknownDeviceType == "urn:Belkin:device:sensor:1" ?
-						"Sensor" :
-						unknownDeviceType == "urn:Belkin:device:controllee:1" ?
-						"Appliance Switch" :
-						unknownDeviceType == "urn:Belkin:device:lightswitch:1" ?
-						"Light Switch" :
+					html += '<td>' + (unknownDeviceType == "urn:Belkin:device:sensor:1" ?	"Sensor" :
+						unknownDeviceType == "urn:Belkin:device:controllee:1" ?	"Appliance Switch" :
+            unknownDeviceType == "urn:Belkin:device:insight:1" ? "Insight Switch" :
+						unknownDeviceType == "urn:Belkin:device:lightswitch:1" ? "Light Switch" :
 						wemoEscapeHtml(unknownDeviceType)) + '</td>';
 					var unknownDeviceAddress = api.getDeviceStateVariable(device,
 						"urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Host",
