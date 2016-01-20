@@ -5,8 +5,7 @@
         "doc_manual": 1,
         "doc_version": 1,
         "doc_platform": 0,
-        "doc_page": "devices" 
-    },
+        "doc_page": "devices" },
     "inScene": "0",
     "x": 2,
     "y": 4,
@@ -27,16 +26,16 @@
                 }
             ]
         },
-				{
-					"Label": {
-						"lang_tag": "configure",
-						"text": "Configure"
-					},
-					"Position": 1,
-					"TabType": "javascript",
-					"ScriptName": "J_WeMo1.js",
-					"Function": "configuration"
-				},
+	{
+		"Label": {
+			"lang_tag": "configure",
+			"text": "Configure"
+		},
+		"Position": 1,
+		"TabType": "javascript",
+		"ScriptName": "J_WeMo1.js",
+		"Function": "configuration"
+	},
         {
             "Label": {
                 "lang_tag": "advanced",
@@ -72,4 +71,3 @@
     "eventList2": [
     ]
 }
-
