@@ -48,7 +48,9 @@ ChildDevices = {}
 ProxyApiVersion = nil
 FutureActionQueue = {}
 
-local binaryStateConvertTable = {
+insightParamsTable = {}
+
+local insightParamsConvertTable = {
 	"Status",
 	"LastChange",
 	"OnFor",
@@ -61,8 +63,6 @@ local binaryStateConvertTable = {
 	"TotalMW",
 	"PowerThreshold"
 }
-
-WEMOSID = "urn:futzle-com:serviceId:WeMo1"
 
 -- Debug levels:
 -- 0: None except startup message.
@@ -491,25 +491,35 @@ end
 --   nil if the proxy timed out (should try again).
 --   false if the proxy refused our request (permanently).
 --   true if the proxy agreed to our request.
-function informProxyOfSubscription(deviceId)
-	debug("Informing proxy of subscription for device " .. deviceId, 2)
+function informProxyOfSubscription(deviceId, subType)
+	debug("Informing proxy of subscription for device " .. deviceId .. " to " .. subType .. " events", 2)
 	local sock = function()
 		local s = socket.tcp()
 		s:settimeout(2)
 		return s
 	end
 	local d = ChildDevices[deviceId]
+  
+  local i = (subType == "insight") and 2 or 1
+  local sid = (subType == "insight") and d.insightSid or d.sid
 
+  local table subscriptionType = {
+    {variableName ='BinaryState', action ='notifyBinaryState', parameter ='binaryState'},
+    {variableName ='InsightParams', action ='notifyInsightParams', parameter ='insightParams'},
+  }  
+  
+  
+  i = subscriptionType[i]
+  
 	-- Tell proxy about this subscription.
-	-- BinaryState is the variable we care about.
 	local proxyRequestBody = "<subscription expiry='" .. d.expiry .. "'>"
 	proxyRequestBody = proxyRequestBody ..
-		"<variable name='BinaryState' host='localhost' deviceId='" ..
+		"<variable name='" .. i.variableName .. "' host='localhost' deviceId='" ..
 		deviceId .. "' serviceId='" .. ServiceId ..
-		"' action='notifyBinaryState' parameter='binaryState' sidParameter='sid'/>"
+		"' action='" .. i.action .. "' parameter='" .. i.parameter .. "' sidParameter='sid'/>"
 	proxyRequestBody = proxyRequestBody .. "</subscription>"
 	local request, code = http.request({
-		url = "http://localhost:2529/upnp/event/" .. url.escape(d.sid),
+		url = "http://localhost:2529/upnp/event/" .. url.escape(sid),
 		create = sock,
 		method = "PUT",
 		headers = {
@@ -568,6 +578,7 @@ end
 -- Remember to run the function in action (with no parameters)
 -- in delay seconds.  Allow only the specified number of retries.
 function queueAction(delay, retries, action)
+  debug("Action queued for " .. type(action) .. ".")
 	table.insert(FutureActionQueue, {
 		time = os.time() + delay,
 		retries = retries,
@@ -582,23 +593,42 @@ end
 --   false if the renewal was refused (permanently).
 --   true if the renewal was accepted (a later renewal will be
 --     queued and the proxy will be informed).
-function renewSubscription(deviceId)
+function renewSubscription(deviceId, subType)
 	debug("Renewing subscription for device " .. deviceId, 2)
 	local d = ChildDevices[deviceId]
-	local eventSubURL = url.absolute(d.location, d.eventSubURL)
-	debug("Renewing subscription at " .. eventSubURL, 2)
-	-- Ask the device to inform the proxy about status changes.
-	local sid, duration = subscribeToDevice(eventSubURL, d.sid, 5)
-	if (sid) then
-		d.expiry = os.time() + duration
-		d.sid = sid
-		-- Tell the proxy of this subscription soon.
-		queueAction(0, 3, function() return informProxyOfSubscription(deviceId) end)
-		queueAction(duration / 2, 3, function() return renewSubscription(deviceId) end)
-		return true
-	else
-		return nil
-	end
+  if subType == "basic" then
+    local eventSubURL = url.absolute(d.location, d.eventSubURL)
+    debug("Renewing subscription at " .. eventSubURL, 2)
+    -- Ask the device to inform the proxy about status changes.
+    local sid, duration = subscribeToDevice(eventSubURL, d.sid, 5)
+    if (sid) then
+      debug("Duration before renewing subscription at " .. eventSubURL .. " is " .. duration, 2)
+      d.expiry = os.time() + duration
+      d.sid = sid
+      -- Tell the proxy of this subscription soon.
+      queueAction(0, 3, function() return informProxyOfSubscription(deviceId, subType) end)
+      queueAction(duration / 2, 3, function() return renewSubscription(deviceId, subType) end)
+      return true
+    else
+      return nil
+    end
+  elseif subType == "insight" then
+    eventSubURL = url.absolute(d.location, d.insightEventSubURL)
+    debug("Renewing subscription at " .. eventSubURL, 2)
+    -- Ask the device to inform the proxy about status changes.
+    local sid, duration = subscribeToDevice(eventSubURL, d.insightSid, 5)
+    if (sid) then
+      debug("Duration before renewing subscription at " .. eventSubURL .. " is " .. duration, 2)
+      d.insightSid = sid
+      d.insightExpiry = os.time() + duration
+      -- Tell the proxy of this subscription soon.
+      queueAction(0, 3, function() return informProxyOfSubscription(deviceId, subType) end)
+      queueAction(duration / 2, 3, function() return renewSubscription(deviceId, subType) end)
+      return true
+    else
+      return nil
+    end
+  end
 end
 
 -- subscribeToAllDevices()
@@ -623,12 +653,27 @@ function subscribeToAllDevices()
 				d.sid = sid
 				d.expiry = os.time() + duration
 				-- Tell the proxy of this subscription soon.
-				queueAction(0, 3, function() return informProxyOfSubscription(childId) end)
-				queueAction(duration / 2, 3, function() return renewSubscription(childId) end)
+				queueAction(0, 3, function() return informProxyOfSubscription(childId, "basic") end)
+				queueAction(duration / 2, 3, function() return renewSubscription(childId, "basic") end)
 			end
+      if (d.insightEventSubURL ~= nil) then
+        insightEventSubURL = url.absolute(d.location, d.insightEventSubURL)
+        debug("Subscribing to events at " .. insightEventSubURL, 2)
+        local sid, duration = subscribeToDevice(insightEventSubURL, nil, 5)
+        d.insightSid = sid
+        d.insightExpiry = os.time() + duration
+        queueAction(0, 3, function() return informProxyOfSubscription(childId, "insight") end)
+				queueAction(duration / 2, 3, function() return renewSubscription(childId, "insight") end)
+			end     
 		end
 	end
 end
+
+    --[[
+    		local t = {}
+		local insightEventSubURL = nil
+
+    ]]--
 
 -- schedule()
 -- Ask the plugin to sleep for as many seconds as
@@ -783,6 +828,12 @@ function initialize(lul_device)
 					childDevice.serviceType = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].serviceType
 					childDevice.controlURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].controlURL
 					childDevice.eventSubURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].eventSubURL
+					if (upnpDevice.serviceList["urn:Belkin:serviceId:insight1"]) then
+						debug("Service list for Wemo Insight Switch", 2)
+						childDevice.insightServiceType = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].serviceType
+						childDevice.insightControlURL = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].controlURL
+						childDevice.insightEventSubURL = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].eventSubURL
+					end
 				end
 			end
 			if (not childDevice.found) then
@@ -827,6 +878,12 @@ function initialize(lul_device)
 						ChildDevices[knownChild].serviceType = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].serviceType
 						ChildDevices[knownChild].controlURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].controlURL
 						ChildDevices[knownChild].eventSubURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].eventSubURL
+						if(upnpDevice.serviceList["urn:Belkin:serviceId:insight1"]) then
+							debug("Service list for Wemo Insight Switch", 2)
+							ChildDevices[knownChild].insightServiceType = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].insightServiceType
+							ChildDevices[knownChild].insightControlURL = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].controlURL
+							ChildDevices[knownChild].insightEventSubURL = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].eventSubURL
+						end
 					end
 				end
 			else
@@ -881,12 +938,8 @@ function handleNotifyBinaryState(lul_device, binaryState, sid)
 	local binaryStateTable =   {}
 	local i = 1
 	for number in string.gmatch(binaryState, "-?%d*%.?%d+") do 
-		binaryStateTable[(binaryStateConvertTable[i])] = number
+		binaryStateTable[(insightParamsConvertTable[i])] = number
 		i = i+1
-	end
-	if binaryStateTable.InstantPower then
-		luup.variable_set(WEMOSID, "InstantPower", binaryStateTable.InstantPower, lul_device)
-		luup.variable_set(WEMOSID, "PowerThreshold", binaryStateTable.PowerThreshold, lul_device)
 	end
         local status = string.match((binaryStateTable.Status or "Error"), "%d+") or "Error"
 	if (tonumber(status) == 8) then debug("WeMo Switch is in Standby", 2) end
@@ -907,6 +960,20 @@ function handleNotifyBinaryState(lul_device, binaryState, sid)
   -- Try to shut the proxy up, we don't care about this SID.
 	luup.call_delay("cancelProxySubscription", 1, sid)
 	return false
+end
+
+function handleNotifyInsightParams(lul_device, InsightParams, sid)
+  local i = 1
+  local cCurrent = luup.variable_get("urn:micasaverde-com:serviceId:EnergyMetering1", "Watts", lul_device) or ""
+  for number in string.gmatch(InsightParams, "-?%d*%.?%d+") do 
+    insightParamsTable[(insightParamsConvertTable[i])] = number
+    i = i+1
+  end
+  local current = (tonumber(insightParamsTable.InstantPower)/1000)
+  current = (current >= 0) and math.floor(current+0.5) or math.ceil(current-0.5)
+  if current ~= tonumber(cCurrent) then
+    luup.variable_set("urn:micasaverde-com:serviceId:EnergyMetering1", "Watts", current, lul_device)
+  end
 end
 
 -- handleSetArmed(lul_device, newArmedValue)
@@ -1016,12 +1083,8 @@ function handleSetTarget(lul_device, newTargetValue)
 				local binaryStateTable =   {}
 				local i = 1
 				for number in string.gmatch(response.BinaryState, "-?%d*%.?%d+") do 
-					binaryStateTable[(binaryStateConvertTable[i])] = number
+					binaryStateTable[(insightParamsConvertTable[i])] = number
 					i = i+1
-				end
-				if binaryStateTable.InstantPower then
-					luup.variable_set(WEMOSID, "InstantPower", binaryStateTable.InstantPower, lul_device)
-					luup.variable_set(WEMOSID, "PowerThreshold", binaryStateTable.PowerThreshold, lul_device)
 				end
         			local status = string.match((binaryStateTable.Status or "Error"), "%d+") or "Error"
 	        		if (tonumber(status) == 8) then debug("WeMo Switch is in Standby", 2) end
