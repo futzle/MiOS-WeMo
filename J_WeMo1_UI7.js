@@ -139,8 +139,11 @@ var WeMo = (function(api)
 		var html = '<p>';
 		html += 'Name&#xA0;<input type="text" class="wemo_name" size="16"/>&#xA0;';
 		html +=
-			'Type&#xA0;<select class="wemo_type"><option value="urn:Belkin:device:controllee:1">Appliance Switch</option>
-      <option value="urn:Belkin:device:insight:1">Insight Switch</option><option value="urn:Belkin:device:sensor:1">Sensor</option><option value="urn:Belkin:device:lightswitch:1">Light Switch</option></select>&#xA0;';
+			'Type&#xA0;<select class="wemo_type"><option value="urn:Belkin:device:controllee:1">Appliance Switch</option>;';
+		html +=
+			'<option value="urn:Belkin:device:insight:1">Insight Switch</option>;';
+		html +=
+			'<option value="urn:Belkin:device:lightswitch:1">Light Switch</option></select>&#xA0;';
 		html +=
 			'IP&#xA0;Address&#xA0;<input type="text" class="wemo_host" size="15"/>&#xA0;';
 		html +=
