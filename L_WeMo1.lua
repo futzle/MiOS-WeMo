@@ -782,8 +782,8 @@ function initialize(lul_device)
 	checkVersion() 
 	
 	-- Go quiet with debug messages unless debugging enabled.
-	Debug = luup.variable_get(ServiceId, "Debug", Device)
-	if (Debug == nil) then
+	Debug = luup.variable_get(ServiceId, "Debug", Device) or ""
+	if (Debug == "") then
 		Debug = 0
 		luup.variable_set(ServiceId, "Debug", "0", Device)
 	else
