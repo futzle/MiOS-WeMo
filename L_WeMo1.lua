@@ -30,7 +30,11 @@ local lxp = require("lxp")
 local g_appendPtr
 Debug = 1
 Device = nil
+Delay = 60
+Version = 1.2
+
 ServiceId = "urn:futzle-com:serviceId:WeMo1"
+
 TypeDeviceFileMap = {
 	[ "urn:Belkin:device:controllee:1" ] = "D_WeMo1_Controllee1.xml",
 	[ "urn:Belkin:device:sensor:1" ] = "D_WeMo1_Sensor1.xml",
@@ -47,22 +51,23 @@ UsnChildMap = {}
 ChildDevices = {}
 ProxyApiVersion = nil
 FutureActionQueue = {}
-
-insightParamsTable = {}
+InsightQueue = {}
 
 local insightParamsConvertTable = {
-	"Status",
-	"LastChange",
-	"OnFor",
-	"OnToday",
-	"OnTotal",
-	"TimePeriod",
-	"AveragePower",
-	"InstantPower",
-	"TodayMW",
-	"TotalMW",
-	"PowerThreshold"
+	"Status",                       -- 0 Off, 1 On or 8 On Below power threshold (See PowerThreshold). 
+	"LastChange",                   -- Unix timestamp of last changed state. 
+	"OnFor",                        -- 
+	"OnToday",                      -- 
+	"OnTotal",                      -- 
+	"TimePeriod",                   -- 
+	"AveragePower",                 -- 
+	"InstantPower",                 -- Instantaneous power (mW).
+	"TodayMW",                      -- Energy used today in mW-minutes.
+	"TotalMW",                      -- Energy used over time period in mW-minutes.
+	"PowerThreshold"                -- Power Threshold.
 }
+
+local currentInsightParams = {}
 
 -- Debug levels:
 -- 0: None except startup message.
@@ -500,16 +505,14 @@ function informProxyOfSubscription(deviceId, subType)
 	end
 	local d = ChildDevices[deviceId]
   
-  local i = (subType == "insight") and 2 or 1
   local sid = (subType == "insight") and d.insightSid or d.sid
 
   local table subscriptionType = {
-    {variableName ='BinaryState', action ='notifyBinaryState', parameter ='binaryState'},
-    {variableName ='InsightParams', action ='notifyInsightParams', parameter ='insightParams'},
+    ["basic"]={variableName ='BinaryState', action ='notifyBinaryState', parameter ='binaryState'},
+    ["insight"]={variableName ='InsightParams', action ='notifyInsightParams', parameter ='insightParams'},
   }  
-  
-  
-  i = subscriptionType[i]
+    
+  i = subscriptionType[subType]
   
 	-- Tell proxy about this subscription.
 	local proxyRequestBody = "<subscription expiry='" .. d.expiry .. "'>"
@@ -578,7 +581,7 @@ end
 -- Remember to run the function in action (with no parameters)
 -- in delay seconds.  Allow only the specified number of retries.
 function queueAction(delay, retries, action)
-  debug("Action queued for " .. type(action) .. ".")
+  debug("Action queued.", 2)
 	table.insert(FutureActionQueue, {
 		time = os.time() + delay,
 		retries = retries,
@@ -657,30 +660,23 @@ function subscribeToAllDevices()
 				queueAction(duration / 2, 3, function() return renewSubscription(childId, "basic") end)
 			end
       if (d.insightEventSubURL ~= nil) then
-        insightEventSubURL = url.absolute(d.location, d.insightEventSubURL)
-        debug("Subscribing to events at " .. insightEventSubURL, 2)
-        local sid, duration = subscribeToDevice(insightEventSubURL, nil, 5)
-        d.insightSid = sid
-        d.insightExpiry = os.time() + duration
-        queueAction(0, 3, function() return informProxyOfSubscription(childId, "insight") end)
-				queueAction(duration / 2, 3, function() return renewSubscription(childId, "insight") end)
-			end     
+        debug("Addind device " .. childId .. " to Insight request queue.", 2)
+        table.insert(InsightQueue,childId)
+			end   
 		end
-	end
+  end
 end
-
-    --[[
-    		local t = {}
-		local insightEventSubURL = nil
-
-    ]]--
 
 -- schedule()
 -- Ask the plugin to sleep for as many seconds as
 -- the next event (or five minutes, if there are no events).
 function schedule()
 	-- How long to sleep?
-	local delay = 300
+  local delay = luup.variable_get(ServiceId, "Delay", Device) or Delay
+	if (delay == "") then
+		luup.variable_set(ServiceId, "Delay", delay, Device)
+	end
+  
 	for i = 1, #FutureActionQueue do
 		if (FutureActionQueue[i].time <= os.time()) then
 			delay = 1
@@ -688,7 +684,12 @@ function schedule()
 		end
 		delay = math.min(delay, FutureActionQueue[i].time - os.time())
 	end
-	debug("Sleeping for " .. delay .. " seconds", 2)
+  
+  for k,v in ipairs(InsightQueue) do
+    handleGetInsightParams(v)
+  end
+  
+	debug("Sleeping for " .. delay .. "seconds", 2)
 	luup.call_delay("reentry", delay, "")
 end
 
@@ -776,10 +777,14 @@ end
 --   lul_device: The top-level device Id.
 function initialize(lul_device)
 	debug("Starting WeMo plugin (device " .. lul_device .. ")", 0)
-
+  
 	Device = lul_device
+  
+  -- Check/Update plugin version.
+	luup.variable_set(ServiceId, "Version", Version, Device)
 	
-	checkVersion() 
+  -- Check UI version.
+	checkVersion()
 	
 	-- Go quiet with debug messages unless debugging enabled.
 	Debug = luup.variable_get(ServiceId, "Debug", Device) or ""
@@ -935,13 +940,12 @@ end
 -- handleNotifyBinaryState(lul_device, binaryState, sid)
 -- Invoked by the UPnP proxy when it learns that a state (switch, sensor) has changed.
 function handleNotifyBinaryState(lul_device, binaryState, sid)
-	local binaryStateTable =   {}
 	local i = 1
 	for number in string.gmatch(binaryState, "-?%d*%.?%d+") do 
-		binaryStateTable[(insightParamsConvertTable[i])] = number
+		currentInsightParams[(insightParamsConvertTable[i])] = number
 		i = i+1
 	end
-        local status = string.match((binaryStateTable.Status or "Error"), "%d+") or "Error"
+        local status = string.match((currentInsightParams.Status or "Error"), "%d+") or "Error"
 	if (tonumber(status) == 8) then debug("WeMo Switch is in Standby", 2) end
         status = (tonumber(status) == 8) and 1 or status
 	debug("Setting BinaryState = " .. status .. " for device " .. lul_device, 2)
@@ -964,16 +968,47 @@ end
 
 function handleNotifyInsightParams(lul_device, InsightParams, sid)
   local i = 1
-  local cCurrent = luup.variable_get("urn:micasaverde-com:serviceId:EnergyMetering1", "Watts", lul_device) or ""
   for number in string.gmatch(InsightParams, "-?%d*%.?%d+") do 
-    insightParamsTable[(insightParamsConvertTable[i])] = number
+    currentInsightParams[(insightParamsConvertTable[i])] = number
     i = i+1
   end
-  local current = (tonumber(insightParamsTable.InstantPower)/1000)
-  current = (current >= 0) and math.floor(current+0.5) or math.ceil(current-0.5)
-  if current ~= tonumber(cCurrent) then
-    luup.variable_set("urn:micasaverde-com:serviceId:EnergyMetering1", "Watts", current, lul_device)
-  end
+  local lastReading = os.time()
+  
+  local delay = luup.variable_get(ServiceId, "Delay", Device) or Delay
+  
+  local totalMW = string.format(tonumber(currentInsightParams.TotalMW))
+  luup.variable_set(ServiceId, "TotalMW", totalW, lul_device)
+  
+  local instantPower = (tonumber(currentInsightParams.InstantPower))
+  luup.variable_set(ServiceId, "InstantPower", instantPower, lul_device)
+  
+  local lastChange = (tonumber(currentInsightParams.LastChange))
+  luup.variable_set(ServiceId, "LastChange", lastChange, lul_device)
+  
+  local onFor = (tonumber(currentInsightParams.OnFor))
+  luup.variable_set(ServiceId, "OnFor", onFor, lul_device)
+  
+  local onToday = (tonumber(currentInsightParams.OnToday))
+  luup.variable_set(ServiceId, "OnToday", onToday, lul_device)
+  
+  local onTotal = (tonumber(currentInsightParams.OnTotal))
+  luup.variable_set(ServiceId, "OnTotal", onTotal, lul_device)
+  
+  local timePeriod = (tonumber(currentInsightParams.TimePeriod))
+  luup.variable_set(ServiceId, "TimePeriod", timePeriod, lul_device)
+
+  local averagePower = (tonumber(currentInsightParams.AveragePower))
+  luup.variable_set(ServiceId, "AveragePower", averagePower, lul_device)
+  
+  local todayMW = (tonumber(currentInsightParams.TodayMW))
+  luup.variable_set(ServiceId, "TodayMW", todayMW, lul_device)
+  
+  local status = string.match((currentInsightParams.Status or "Error"), "%d+") or "Error"
+  local threshold = (tonumber(status) == 8) and 0 or 1
+  status = (tonumber(status) == 8) and 1 or status
+  luup.variable_set(ServiceId, "ThresholdReached", threshold, lul_device)
+  luup.variable_set("urn:upnp-org:serviceId:SwitchPower1", "Status", status, lul_device)
+  return true
 end
 
 -- handleSetArmed(lul_device, newArmedValue)
@@ -999,11 +1034,13 @@ end
 --   parameters: array of parameters expected by the action (in the order given in the service file)
 --   values: array of parameter values expected by the action (in the same order)
 function upnpCallAction(location, serviceType, action, parameters, values)
-	local envelopeXPath = "/http://schemas.xmlsoap.org/soap/envelope/|Envelope"
+  
+  local replyServiceType = (action =="GetInsightParams") and "urn:Belkin:service:metainfo:1" or serviceType
+  
+  local envelopeXPath = "/http://schemas.xmlsoap.org/soap/envelope/|Envelope"
 	local bodyXPath = envelopeXPath .. "/http://schemas.xmlsoap.org/soap/envelope/|Body"
-	local responseXPath = bodyXPath .. "/" .. serviceType .. "|" .. action .. "Response"
-	local valueXPath = responseXPath .. "/BinaryState"
-
+	local responseXPath = bodyXPath .. "/" .. replyServiceType .. "|" .. action .. "Response"
+  
 	-- Look for these paths in the response XML.
 	local xPathTargets = {}
 	for i = 1, #parameters do
@@ -1021,13 +1058,15 @@ function upnpCallAction(location, serviceType, action, parameters, values)
 	-- Form the request to set the switch.
 	local parameterList = {}
 	for i = 1, #parameters do
-		table.insert(parameterList,
-			"<" .. parameters[i] .. ">" .. values[i] .. "</" .. parameters[i] .. ">\n")
+    if (values[i]) then
+      table.insert(parameterList,
+      "<" .. parameters[i] .. ">" .. values[i] .. "</" .. parameters[i] .. ">\n")
+    end
 	end
 	local requestBody = "<?xml version=\"1.0\"?>\n" ..
 		"<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body>\n" ..
 		"<u:" .. action .. " xmlns:u=\"" .. serviceType .. "\">" ..
-		table.concat(parameterList) ..
+		(table.concat(parameterList) or "") ..
 		"</u:" .. action .. ">" ..
 		"</s:Body></s:Envelope>\n"
 
@@ -1078,15 +1117,13 @@ function handleSetTarget(lul_device, newTargetValue)
 				debug("Insight returns empty State string: " .. code, 2)
 				return true
 			else
-				debug("SetBinaryState confirmed", 2)
-				
-				local binaryStateTable =   {}
+        debug("SetBinaryState confirmed", 2)
 				local i = 1
 				for number in string.gmatch(response.BinaryState, "-?%d*%.?%d+") do 
-					binaryStateTable[(insightParamsConvertTable[i])] = number
+					currentInsightParams[(insightParamsConvertTable[i])] = number
 					i = i+1
 				end
-        			local status = string.match((binaryStateTable.Status or "Error"), "%d+") or "Error"
+        			local status = string.match((currentInsightParams.Status or "Error"), "%d+") or "Error"
 	        		if (tonumber(status) == 8) then debug("WeMo Switch is in Standby", 2) end
         			status = (tonumber(status) == 8) and 1 or status
         			if (status == newTargetValue) then
@@ -1102,4 +1139,26 @@ function handleSetTarget(lul_device, newTargetValue)
 		end
 	end
 	return false
+end
+
+-- handleGetInsightParams(lul_device)
+function handleGetInsightParams(lul_device)
+	debug("Getting Insight Parameters for device " .. lul_device, 2)
+	if (ChildDevices[lul_device]) then
+		local childDeviceType = luup.devices[lul_device].device_type
+		if (childDeviceType == "urn:schemas-futzle-com:device:WeMoControllee:1") then
+			local controlURL = url.absolute(ChildDevices[lul_device].location, ChildDevices[lul_device].insightControlURL)
+			local serviceType = ChildDevices[lul_device].insightServiceType
+			local response, code = upnpCallAction(controlURL, serviceType, "GetInsightParams", { "InsightParams" }, { "" })
+			if (response == nil) then
+				debug("Failed to get Insight parameters: " .. code, 2)
+				return false
+			else
+				debug("GetInsightParams confirmed", 2)
+        handleNotifyInsightParams(lul_device, response.InsightParams)
+        return response.InsightParams
+      end
+    end
+  end
+  return false
 end
