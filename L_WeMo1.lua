@@ -672,11 +672,8 @@ end
 -- the next event (or five minutes, if there are no events).
 function schedule()
 	-- How long to sleep?
-  local delay = luup.variable_get(ServiceId, "Delay", Device) or Delay
-	if (delay == "") then
-		luup.variable_set(ServiceId, "Delay", delay, Device)
-	end
-  
+	local delay = luup.variable_get(ServiceId, "Delay", Device)
+
 	for i = 1, #FutureActionQueue do
 		if (FutureActionQueue[i].time <= os.time()) then
 			delay = 1
@@ -685,11 +682,11 @@ function schedule()
 		delay = math.min(delay, FutureActionQueue[i].time - os.time())
 	end
   
-  for k,v in ipairs(InsightQueue) do
-    handleGetInsightParams(v)
-  end
+	for k,v in ipairs(InsightQueue) do
+		handleGetInsightParams(v)
+	end
   
-	debug("Sleeping for " .. delay .. "seconds", 2)
+	debug("Sleeping for " .. delay .. " seconds", 2)
 	luup.call_delay("reentry", delay, "")
 end
 
@@ -778,10 +775,15 @@ end
 function initialize(lul_device)
 	debug("Starting WeMo plugin (device " .. lul_device .. ")", 0)
   
-	Device = lul_device
+  	Device = lul_device
   
   -- Check/Update plugin version.
 	luup.variable_set(ServiceId, "Version", Version, Device)
+	
+	local delay = luup.variable_get(ServiceId, "Delay", Device) or ""
+	if (delay == "") then
+		luup.variable_set(ServiceId, "Delay", delay, Device)
+	end
 	
   -- Check UI version.
 	checkVersion()
