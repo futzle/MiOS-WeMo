@@ -31,7 +31,7 @@ local g_appendPtr
 Debug = 1
 Device = nil
 Delay = 60
-Version = 1.2
+Version = 1.3
 
 ServiceId = "urn:futzle-com:serviceId:WeMo1"
 
@@ -782,7 +782,7 @@ function initialize(lul_device)
 	
 	local delay = luup.variable_get(ServiceId, "Delay", Device) or ""
 	if (delay == "") then
-		luup.variable_set(ServiceId, "Delay", delay, Device)
+		luup.variable_set(ServiceId, "Delay", Delay, Device)
 	end
 	
   -- Check UI version.
@@ -975,9 +975,7 @@ function handleNotifyInsightParams(lul_device, InsightParams, sid)
     i = i+1
   end
   local lastReading = os.time()
-  
-  local delay = luup.variable_get(ServiceId, "Delay", Device) or Delay
-  
+
   local totalMW = string.format(tonumber(currentInsightParams.TotalMW))
   luup.variable_set(ServiceId, "TotalMW", totalW, lul_device)
   
