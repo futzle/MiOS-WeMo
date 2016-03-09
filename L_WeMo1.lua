@@ -977,7 +977,7 @@ function handleNotifyInsightParams(lul_device, InsightParams, sid)
   local lastReading = os.time()
 
   local totalMW = string.format(tonumber(currentInsightParams.TotalMW))
-  luup.variable_set(ServiceId, "TotalMW", totalW, lul_device)
+  luup.variable_set(ServiceId, "TotalMW", totalMW, lul_device)
   
   local instantPower = (tonumber(currentInsightParams.InstantPower))
   luup.variable_set(ServiceId, "InstantPower", instantPower, lul_device)
