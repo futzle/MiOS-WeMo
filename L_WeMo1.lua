@@ -83,14 +83,14 @@ function debug(s, level)
 end
 
 local function checkVersion()
-	local ui7Check = luup.variable_get(ServiceId, "UI7Check", lug_device) or ""
+	local ui7Check = luup.variable_get(ServiceId, "UI7Check", Device) or ""
 	if ui7Check == "" then
-		luup.variable_set(ServiceId, "UI7Check", "false", lug_device)
+		luup.variable_set(ServiceId, "UI7Check", "false", Device)
 		ui7Check = "false"
 	end
 	if( luup.version_branch == 1 and luup.version_major == 7 and ui7Check == "false") then
-		luup.variable_set(ServiceId, "UI7Check", "true", lug_device)
-		luup.attr_set("device_json", "D_WeMo1_UI7.json", lug_device)
+		luup.variable_set(ServiceId, "UI7Check", "true", Device)
+		luup.attr_set("device_json", "D_WeMo1_UI7.json", Device)
 		luup.reload()
 	end
 end
@@ -750,9 +750,9 @@ local function createChildDevices()
 			-- Keep local munged copies of the device's UPnP files,
 			-- because we need additional elements (<staticJson>) and
 			-- want to filter out services we can't use.
-			local isUI7 = luup.variable_get(ServiceId, "UI7Check", lug_device) or ""
+			local isUI7 = luup.variable_get(ServiceId, "UI7Check", Device) or ""
 			if isUI7 == "" then
-				luup.variable_set(ServiceId, "UI7Check", "false", lug_device)
+				luup.variable_set(ServiceId, "UI7Check", "false", Device)
 				isUI7 = "false"
 			end
 			if isUI7 == "true" then
@@ -775,12 +775,12 @@ end
 function initialize(lul_device)
 	debug("Starting WeMo plugin (device " .. lul_device .. ")", 0)
   
-  	Device = lul_device
+	Device = lul_device
   
   -- Check/Update plugin version.
 	luup.variable_set(ServiceId, "Version", Version, Device)
 	
-	local delay = luup.variable_get(ServiceId, "Delay", Device) or ""
+  local delay = luup.variable_get(ServiceId, "Delay", Device) or ""
 	if (delay == "") then
 		luup.variable_set(ServiceId, "Delay", Delay, Device)
 	end
@@ -982,6 +982,9 @@ function handleNotifyInsightParams(lul_device, InsightParams, sid)
   local instantPower = (tonumber(currentInsightParams.InstantPower))
   luup.variable_set(ServiceId, "InstantPower", instantPower, lul_device)
   
+  local watts = string.format("%.1f",(instantPower*.001))
+  luup.variable_set("urn:micasaverde-com:serviceId:EnergyMetering1", "Watts", watts, lul_device)
+  
   local lastChange = (tonumber(currentInsightParams.LastChange))
   luup.variable_set(ServiceId, "LastChange", lastChange, lul_device)
   
@@ -1002,6 +1005,8 @@ function handleNotifyInsightParams(lul_device, InsightParams, sid)
   
   local todayMW = (tonumber(currentInsightParams.TodayMW))
   luup.variable_set(ServiceId, "TodayMW", todayMW, lul_device)
+  local KWH = string.format("%.3f",((todayMW*0.000001)/24)) --not sure if this is correct???????????
+  luup.variable_set("urn:micasaverde-com:serviceId:EnergyMetering1", "KWH", KWH, lul_device)
   
   local status = string.match((currentInsightParams.Status or "Error"), "%d+") or "Error"
   local threshold = (tonumber(status) == 8) and 0 or 1
@@ -1141,7 +1146,6 @@ function handleSetTarget(lul_device, newTargetValue)
 	return false
 end
 
--- handleGetInsightParams(lul_device)
 function handleGetInsightParams(lul_device)
 	debug("Getting Insight Parameters for device " .. lul_device, 2)
 	if (ChildDevices[lul_device]) then
@@ -1154,7 +1158,70 @@ function handleGetInsightParams(lul_device)
 				debug("Failed to get Insight parameters: " .. code, 2)
 				return false
 			else
-				debug("GetInsightParams confirmed", 2)
+				debug("Get Insight Params confirmed", 2)
+        handleNotifyInsightParams(lul_device, response.InsightParams)
+        return response.InsightParams
+      end
+    end
+  end
+  return false
+end
+
+function handleGetPowerThreshold(lul_device, PowerThreshold)
+	debug("Getting Power Threshold for device " .. lul_device, 2)
+	if (ChildDevices[lul_device]) then
+		local childDeviceType = luup.devices[lul_device].device_type
+		if (childDeviceType == "urn:schemas-futzle-com:device:WeMoControllee:1") then
+			local controlURL = url.absolute(ChildDevices[lul_device].location, ChildDevices[lul_device].insightControlURL)
+			local serviceType = ChildDevices[lul_device].insightServiceType
+			local response, code = upnpCallAction(controlURL, serviceType, "GetPowerThreshold", {PowerThreshold}, {""})
+			if (response == nil) then
+				debug("Failed to get Power Threshold: " .. code, 2)
+				return false
+			else
+				debug("Get Power Threshold confirmed", 2)
+        handleNotifyInsightParams(lul_device, response.InsightParams)
+        return response.InsightParams
+      end
+    end
+  end
+  return false
+end
+
+function handleSetPowerThreshold(lul_device, PowerThreshold)
+	debug("Setting Power Threshold for device " .. lul_device, 2)
+	if (ChildDevices[lul_device]) then
+		local childDeviceType = luup.devices[lul_device].device_type
+		if (childDeviceType == "urn:schemas-futzle-com:device:WeMoControllee:1") then
+			local controlURL = url.absolute(ChildDevices[lul_device].location, ChildDevices[lul_device].insightControlURL)
+			local serviceType = ChildDevices[lul_device].insightServiceType
+			local response, code = upnpCallAction(controlURL, serviceType, "SetPowerThreshold", {"PowerThreshold"}, {PowerThreshold})
+			if (response == nil) then
+				debug("Failed to set Power Threshold: " .. code, 2)
+				return false
+			else
+				debug("Set Power Threshold confirmed", 2)
+        handleNotifyInsightParams(lul_device, response.InsightParams)
+        return response.InsightParams
+      end
+    end
+  end
+  return false
+end
+
+function handleResetPowerThreshold(lul_device, PowerThreshold)
+	debug("Resetting Power Threshold for device " .. lul_device, 2)
+	if (ChildDevices[lul_device]) then
+		local childDeviceType = luup.devices[lul_device].device_type
+		if (childDeviceType == "urn:schemas-futzle-com:device:WeMoControllee:1") then
+			local controlURL = url.absolute(ChildDevices[lul_device].location, ChildDevices[lul_device].insightControlURL)
+			local serviceType = ChildDevices[lul_device].insightServiceType
+			local response, code = upnpCallAction(controlURL, serviceType, "ResetPowerThreshold", {"ResetPowerThreshold"}, {""})
+			if (response == nil) then
+				debug("Failed to Reset Power Threshold: " .. code, 2)
+				return false
+			else
+				debug("Reset Power Threshold confirmed", 2)
         handleNotifyInsightParams(lul_device, response.InsightParams)
         return response.InsightParams
       end
