@@ -1,96 +1,75 @@
-<?xml version="1.0"?>
-<scpd
-    xmlns="urn:schemas-upnp-org:service-1-0">
-    <specVersion>
-        <major>1</major>
-        <minor>0</minor>
-    </specVersion>
-    <serviceStateTable>
-        <stateVariable sendEvents="yes">
-            <name>InstantPower</name>
-            <dataType>String</dataType>
-            <defaultValue>0</defaultValue>
-        </stateVariable>
-        <stateVariable sendEvents="yes">
-            <name>PowerThreshold</name>
-            <dataType>String</dataType>
-            <defaultValue>0</defaultValue>
-        </stateVariable>
-    </serviceStateTable>
+<implementation>
+    <functions>
+function initialize (lul_device)
+	if (package.path:find ("/etc/cmh-ludl/?.lua;/etc/cmh-lu/?.lua", 1, true) == nil) then
+		package.path = package.path .. ";/etc/cmh-ludl/?.lua;/etc/cmh-lu/?.lua"
+	end
+	package.loaded.L_WeMo1 = nil
+	this_plugin = require ("L_WeMo1")
+	reentry = this_plugin.reentry
+	cancelProxySubscription = this_plugin.cancelProxySubscription
+	return this_plugin.initialize (lul_device)
+end
+	</functions>
+    <startup>initialize</startup>
     <actionList>
         <action>
+            <serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
             <name>notifyBinaryState</name>
-            <argumentList>
-                <argument>
-                    <name>binaryState</name>
-                    <direction>in</direction>
-                    <relatedStateVariable>string</relatedStateVariable>
-                </argument>
-                <argument>
-                    <name>sid</name>
-                    <direction>in</direction>
-                    <relatedStateVariable>string</relatedStateVariable>
-                </argument>
-            </argumentList>
+            <run>
+              return this_plugin.handleNotifyBinaryState(lul_device, lul_settings.binaryState, lul_settings.sid)
+            </run>
         </action>
         <action>
+            <serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
             <name>notifyInsightParams</name>
-            <argumentList>
-                <argument>
-                    <name>InsightParams</name>
-                    <direction>in</direction>
-                    <relatedStateVariable>string</relatedStateVariable>
-                </argument>
-                <argument>
-                    <name>sid</name>
-                    <direction>in</direction>
-                    <relatedStateVariable>string</relatedStateVariable>
-                </argument>
-            </argumentList>
+            <run>
+              return this_plugin.handleNotifyInsightParams(lul_device, lul_settings.insightParams, lul_settings.sid)
+            </run>
         </action>
         <action>
+            <serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
             <name>GetInsightParams</name>
-            <argumentList>
-                <argument>
-                    <retval />
-                    <name>InsightParams</name>
-                    <direction>out</direction>
-                    <relatedStateVariable>InsightParams</relatedStateVariable>
-                </argument>
-            </argumentList>
+            <run>
+              return this_plugin.handleGetInsightParams(lul_device)
+            </run>
         </action>
+        
         <action>
+            <serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
             <name>GetPowerThreshold</name>
-            <argumentList>
-                <argument>
-                    <retval />
-                    <name>PowerThreshold</name>
-                    <relatedStateVariable>PowerThreshold</relatedStateVariable>
-                    <direction>out</direction>
-                </argument>
-            </argumentList>
+            <run>
+              return this_plugin.handleGetPowerThreshold(lul_device, lul_settings.PowerThreshold)
+            </run>
         </action>
         <action>
+            <serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
             <name>SetPowerThreshold</name>
-            <argumentList>
-                <argument>
-                    <retval />
-                    <name>PowerThreshold</name>
-                    <relatedStateVariable>PowerThreshold</relatedStateVariable>
-                    <direction>in</direction>
-                </argument>
-            </argumentList>
+            <run>
+              return this_plugin.handleSetPowerThreshold(lul_device, lul_settings.PowerThreshold)
+            </run>
+        </action>        
+         <action>
+            <serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
+            <name>ResetPowerThreshold</name>
+            <run>
+              return this_plugin.handleResetPowerThreshold(lul_device, lul_settings.PowerThreshold)
+            </run>
+        </action>
+        
+        <action>
+            <serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
+            <name>SetArmed</name>
+            <run>
+              return this_plugin.handleSetArmed(lul_device, lul_settings.newArmedValue)
+            </run>
         </action>
         <action>
-            <name>ResetPowerThreshold</name>
-            <argumentList>
-                <argument>
-                    <retval />
-                    <name>PowerThreshold</name>
-                    <relatedStateVariable>PowerThreshold</relatedStateVariable>
-                    <direction>in</direction>
-                </argument>
-            </argumentList>
+            <serviceId>urn:upnp-org:serviceId:SwitchPower1</serviceId>
+            <name>SetTarget</name>
+            <run>
+              return this_plugin.handleSetTarget(lul_device, lul_settings.newTargetValue)
+            </run>
         </action>
     </actionList>
-</scpd>
+</implementation>
