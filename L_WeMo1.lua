@@ -31,7 +31,7 @@ local g_appendPtr
 Debug = 1
 Device = nil
 Delay = 60
-Version = 1.3
+Version = 1.31
 
 ServiceId = "urn:futzle-com:serviceId:WeMo1"
 
@@ -1118,9 +1118,9 @@ function handleSetTarget(lul_device, newTargetValue)
 			if (response == nil) then
 				debug("Failed to set target: " .. code, 2)
 				return false
-			elseif (response ~= nil and code == 200) then
-				debug("Insight returns empty State string: " .. code, 2)
-				return true
+			--elseif (response ~= nil and code == 200) then
+				--debug("Insight returns empty State string: " .. code, 2)
+				--return true
 			else
         debug("SetBinaryState confirmed", 2)
 				local i = 1
