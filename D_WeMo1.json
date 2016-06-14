@@ -27,16 +27,16 @@
                 }
             ]
         },
-				{
-					"Label": {
-						"lang_tag": "configure",
-						"text": "Configure"
-					},
-					"Position": 1,
-					"TabType": "javascript",
-					"ScriptName": "J_WeMo1.js",
-					"Function": "configuration"
-				},
+	{
+            "Label": {
+                "lang_tag": "configure",
+                "text": "Configure"
+            },
+            "Position": 1,
+            "TabType": "javascript",
+            "ScriptName": "J_WeMo1.js",
+            "Function": "configuration"
+        },
         {
             "Label": {
                 "lang_tag": "advanced",
