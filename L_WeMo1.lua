@@ -31,7 +31,7 @@ local g_appendPtr
 Debug = 1
 Device = nil
 Delay = 60
-Version = 1.31
+Version = 1.315
 
 ServiceId = "urn:futzle-com:serviceId:WeMo1"
 
@@ -982,7 +982,7 @@ function handleNotifyInsightParams(lul_device, InsightParams, sid)
   local instantPower = (tonumber(currentInsightParams.InstantPower))
   luup.variable_set(ServiceId, "InstantPower", instantPower, lul_device)
   
-  local watts = string.format("%.1f",(instantPower*.001))
+  local watts = math.floor(instantPower*.001)
   luup.variable_set("urn:micasaverde-com:serviceId:EnergyMetering1", "Watts", watts, lul_device)
   
   local lastChange = (tonumber(currentInsightParams.LastChange))
@@ -1005,7 +1005,7 @@ function handleNotifyInsightParams(lul_device, InsightParams, sid)
   
   local todayMW = (tonumber(currentInsightParams.TodayMW))
   luup.variable_set(ServiceId, "TodayMW", todayMW, lul_device)
-  local KWH = string.format("%.3f",((todayMW*0.000001)/24)) --not sure if this is correct???????????
+  local KWH = math.floor((todayMW*0.000001)/24)
   luup.variable_set("urn:micasaverde-com:serviceId:EnergyMetering1", "KWH", KWH, lul_device)
   
   local status = string.match((currentInsightParams.Status or "Error"), "%d+") or "Error"
