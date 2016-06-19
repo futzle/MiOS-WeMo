@@ -238,6 +238,58 @@
                     "suffix": {}
                 }
             ]
+        },
+        {
+            "id": 2,
+            "label": {
+                "lang_tag": "energy_usage_goes_above",
+                "text": "Energy usage goes above"
+            },
+            "serviceId": "urn:micasaverde-com:serviceId:EnergyMetering1",
+            "norepeat": "1",
+            "argumentList": [
+                {
+                    "id": 1,
+                    "dataType": "i4",
+                    "name": "Watts",
+                    "comparisson": ">",
+                    "prefix": {
+                        "lang_tag": "watts",
+                        "text": "Watts: "
+                    },
+                    "suffix": {},
+                    "HumanFriendlyText": {
+                        "lang_tag": "hft_energy_usage_goes_above",
+                        "text": "_DEVICE_NAME_: Energy usage goes above _ARGUMENT_VALUE_ watts"
+                    }
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "label": {
+                "lang_tag": "energy_usage_goes_below",
+                "text": "Energy usage goes below"
+            },
+            "serviceId": "urn:micasaverde-com:serviceId:EnergyMetering1",
+            "norepeat": "1",
+            "argumentList": [
+                {
+                    "id": 1,
+                    "dataType": "i4",
+                    "name": "Watts",
+                    "comparisson": "<",
+                    "prefix": {
+                        "lang_tag": "watts",
+                        "text": "Watts: "
+                    },
+                    "suffix": {},
+                    "HumanFriendlyText": {
+                        "lang_tag": "hft_energy_usage_goes_below",
+                        "text": "_DEVICE_NAME_: Energy usage goes below _ARGUMENT_VALUE_ watts"
+                    }
+                }
+            ]
         }
     ],
     "DeviceType": "urn:schemas-futzle-com:device:WeMoControllee:1"

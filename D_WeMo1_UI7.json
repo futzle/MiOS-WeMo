@@ -4,16 +4,16 @@
     "x": 2,
     "y": 4,
     "Tabs": [
-				{
-					"Label": {
-						"lang_tag": "configure",
-						"text": "Configure"
-					},
-					"Position": 1,
-					"TabType": "javascript",
-					"ScriptName": "J_WeMo1_UI7.js",
-					"Function": "WeMo.configuration"
-				},
+        {
+            "Label": {
+                "lang_tag": "configure",
+                "text": "Configure"
+            },
+            "Position": 1,
+            "TabType": "javascript",
+            "ScriptName": "J_WeMo1_UI7.js",
+            "Function": "WeMo.configuration"
+        },
         {
             "Label": {
                 "lang_tag": "advanced",
@@ -46,7 +46,5 @@
         }
     ],
     "DeviceType": "urn:schemas-futzle-com:device:WeMo:1",
-    "eventList2": [
-    ]
+    "eventList2": []
 }
-

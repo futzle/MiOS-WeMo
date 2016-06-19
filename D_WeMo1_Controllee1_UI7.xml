@@ -16,14 +16,14 @@
                 <SCPDURL>S_SwitchPower1.xml</SCPDURL>
             </service>
             <service>
-                <serviceType>urn:schemas-micasaverde-com:service:EnergyMetering:1</serviceType>
-                <serviceId>urn:micasaverde-com:serviceId:EnergyMetering1</serviceId>
-                <SCPDURL>S_EnergyMetering1.xml</SCPDURL>
-            </service>
-            <service>
                 <serviceType>urn:schemas-micasaverde-com:service:HaDevice:1</serviceType>
                 <serviceId>urn:micasaverde-com:serviceId:HaDevice1</serviceId>
                 <SCPDURL>S_HaDevice1.xml</SCPDURL>
+            </service>
+            <service>
+                <serviceType>urn:schemas-micasaverde-com:service:EnergyMetering:1</serviceType>
+                <serviceId>urn:micasaverde-com:serviceId:EnergyMetering1</serviceId>
+                <SCPDURL>S_EnergyMetering1.xml</SCPDURL>
             </service>
         </serviceList>
     </device>

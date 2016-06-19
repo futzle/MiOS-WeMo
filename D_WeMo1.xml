@@ -15,10 +15,10 @@
         <SCPDURL>S_WeMo1.xml</SCPDURL>
       </service>
       <service>
-				<serviceType>urn:schemas-micasaverde-com:service:HaDevice:1</serviceType>
-				<serviceId>urn:micasaverde-com:serviceId:HaDevice1</serviceId>
-				<SCPDURL>S_HaDevice1.xml</SCPDURL>
-			</service>
+        <serviceType>urn:schemas-micasaverde-com:service:HaDevice:1</serviceType>
+        <serviceId>urn:micasaverde-com:serviceId:HaDevice1</serviceId>
+        <SCPDURL>S_HaDevice1.xml</SCPDURL>
+      </service>
     </serviceList>
     <implementationList>
       <implementationFile>I_WeMo1.xml</implementationFile>
