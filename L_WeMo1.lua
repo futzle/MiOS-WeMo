@@ -31,7 +31,7 @@ local g_appendPtr
 Debug = 1
 Device = nil
 Delay = 60
-Version = 1.315
+Version = 1.316
 
 ServiceId = "urn:futzle-com:serviceId:WeMo1"
 
@@ -775,8 +775,11 @@ end
 function initialize(lul_device)
 	debug("Starting WeMo plugin (device " .. lul_device .. ")", 0)
   
-	Device = lul_device
+  -- Set main Wemo device to failure to false
+  luup.set_failure(false, lul_device)
   
+	Device = lul_device
+    
   -- Check/Update plugin version.
 	luup.variable_set(ServiceId, "Version", Version, Device)
 	
