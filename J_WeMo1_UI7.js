@@ -174,7 +174,7 @@ var WeMo = (function(api)
 			"ChildCount", deviceCount);
 	}
 	// Add a found device.
-	function configurationAddFoundDevice(device, index, button, static)
+	function configurationAddFoundDevice(device, index, button, isStatic)
 	{
 		var btn = jQuery(button);
 		btn.parent('input')
@@ -187,7 +187,7 @@ var WeMo = (function(api)
 			"urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + index + "USN", 0);
 		var unknownDeviceHost = api.getDeviceState(device,
 			"urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + index + "Host", 0);
-		if (static)
+		if (isStatic)
 		{
 			configurationAddDevice(device, unknownDeviceName, unknownDeviceType,
 				unknownDeviceUSN, unknownDeviceHost);
@@ -291,6 +291,7 @@ var WeMo = (function(api)
 						'dynamic': false
 					});
 				var childRoom;
+				var checkDevice;
 				var childFound = false;
 				for (checkDevice in jsonp.ud.devices)
 				{
