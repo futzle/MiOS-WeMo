@@ -307,7 +307,7 @@ var WeMo = (function(api)
 						}
 						else
 						{
-							childRoom = jsonp.get_room_by_id(childRoomId)
+							childRoom = api.getRoomObject(childRoomId)
 								.name;
 						}
 						childFound = true;
