@@ -890,7 +890,7 @@ function initialize(lul_device)
 						ChildDevices[knownChild].eventSubURL = upnpDevice.serviceList["urn:Belkin:serviceId:basicevent1"].eventSubURL
 						if(upnpDevice.serviceList["urn:Belkin:serviceId:insight1"]) then
 							debug("Service list for Wemo Insight Switch", 2)
-							ChildDevices[knownChild].insightServiceType = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].insightServiceType
+							ChildDevices[knownChild].insightServiceType = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].serviceType
 							ChildDevices[knownChild].insightControlURL = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].controlURL
 							ChildDevices[knownChild].insightEventSubURL = upnpDevice.serviceList["urn:Belkin:serviceId:insight1"].eventSubURL
 						end
