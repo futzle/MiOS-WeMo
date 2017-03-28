@@ -46,8 +46,8 @@ var WeMo = (function(api)
 
 	function wemoEscapeHtml(string)
 	{
-		if(typeof string == 'boolean') {
-			string = string.toString()
+		if(typeof string === 'boolean') {
+			string = string.toString();
     		}
 
 		if(typeof string !== 'string') {
@@ -61,8 +61,7 @@ var WeMo = (function(api)
 
 	function ShowStatus(text, error)
 	{
-
-		var html = ''
+		var html = '';
 		html =
 			'<input type="button" value="Reload Luup" onClick="WeMo.doReload()"/>';
 
@@ -107,6 +106,7 @@ var WeMo = (function(api)
 			}
 		});
 	}
+	
 	// Remove an existing device.
 	function configurationRemoveChildDevice(device, index, button)
 	{
@@ -127,28 +127,33 @@ var WeMo = (function(api)
 			"EnableMulticast", newState ? "1" : "0", 0);
 		if (!btn.is(':checked'))
 		{
-			jQuery('#wemo_scanResults')
+				jQuery('#wemo_scanResults')
 				.hide();
 		}
 		jQuery('#wemo_saveChanges')
 			.show();
+	}
+	
+	function setManualSubscription(device, button)
+	{
+		var btn = jQuery(button);
+		var newState = btn.is(':checked');
+		setDeviceStateVariable(device, "urn:futzle-com:serviceId:WeMo1",
+		"Report", newState ? "1" : "0", 0);
+		jQuery('#wemo_saveChanges');
 	}
 
 	function addManualRow(device, node)
 	{
 		var html = '<p>';
 		html += 'Name&#xA0;<input type="text" class="wemo_name" size="16"/>&#xA0;';
-		html +=
-			'Type&#xA0;<select class="wemo_type"><option value="urn:Belkin:device:controllee:1">Appliance Switch</option>;';
-		html +=
-			'<option value="urn:Belkin:device:insight:1">Insight Switch</option>;';
-		html +=
-			'<option value="urn:Belkin:device:lightswitch:1">Light Switch</option></select>&#xA0;';
-		html +=
-			'IP&#xA0;Address&#xA0;<input type="text" class="wemo_host" size="15"/>&#xA0;';
-		html +=
-			'<input type="button" value="Add Static" onClick="WeMo.configurationAddManualDevice(' +
-			device + ',this)"/>';
+		html +=	'Type&#xA0;<select class="wemo_type">;';
+		html +=	'<option value="urn:Belkin:device:controllee:1">Appliance Switch</option>;';
+		html +=	'<option value="urn:Belkin:device:sensor:1">Sensor</option>;';
+		html +=	'<option value="urn:Belkin:device:lightswitch:1">Light Switch</option>;';
+		html +=	'<option value="urn:Belkin:device:insight:1">Insight Switch</option></select>&#xA0;';
+		html +=	'IP&#xA0;Address&#xA0;<input type="text" class="wemo_host" size="15"/>&#xA0;';
+		html +=	'<input type="button" value="Add Static" onClick="WeMo.configurationAddManualDevice(' +	device + ',this)"/>';
 		html += '</p>';
 		jQuery('#' + node)
 			.append(html);
@@ -214,11 +219,11 @@ var WeMo = (function(api)
 		var host = btn.parent()
 			.find('.wemo_host')
 			.val();
-		if (name == "")
+		if (name === "")
 		{
 			name = "Manual WeMo device";
 		}
-		if (host == "")
+		if (host === "")
 		{
 			return;
 		}
@@ -276,7 +281,7 @@ var WeMo = (function(api)
 					{
 						'dynamic': false
 					}) || "";
-				if (childDeviceType == "")
+				if (childDeviceType === "")
 				{
 					continue;
 				}
@@ -294,13 +299,13 @@ var WeMo = (function(api)
 				var childFound = false;
 				for (checkDevice in jsonp.ud.devices)
 				{
-					if (jsonp.ud.devices[checkDevice].id_parent == device &&
-						(jsonp.ud.devices[checkDevice].altid == childDeviceUSN ||
-							jsonp.ud.devices[checkDevice].altid == childDeviceHost))
+					if (jsonp.ud.devices[checkDevice].id_parent === device &&
+						(jsonp.ud.devices[checkDevice].altid === childDeviceUSN ||
+							jsonp.ud.devices[checkDevice].altid === childDeviceHost))
 					{
 						childName = jsonp.ud.devices[checkDevice].name;
 						var childRoomId = jsonp.ud.devices[checkDevice].room;
-						if (childRoomId == "0")
+						if (childRoomId === "0")
 						{
 							// Room 0 is unassigned, would break get_room_by_id().
 							childRoom = "Unassigned";
@@ -319,12 +324,12 @@ var WeMo = (function(api)
 				}
 				childHtml += '<tr>';
 				childHtml += '<td>' + wemoEscapeHtml(childName) + '</td>';
-				childHtml += '<td>' + (childDeviceType == "urn:Belkin:device:sensor:1" ? "Sensor" :
-					childDeviceType == "urn:Belkin:device:controllee:1" ?	"Appliance Switch" :
-          childDeviceType == "urn:Belkin:device:insight:1" ? "Insight Switch" :
-					childDeviceType == "urn:Belkin:device:lightswitch:1" ? "Light Switch" :
+				childHtml += '<td>' + (childDeviceType === "urn:Belkin:device:sensor:1" ? "Sensor" :
+					childDeviceType === "urn:Belkin:device:controllee:1" ?	"Appliance Switch" :
+          childDeviceType === "urn:Belkin:device:insight:1" ? "Insight Switch" :
+					childDeviceType === "urn:Belkin:device:lightswitch:1" ? "Light Switch" :
 					wemoEscapeHtml(childDeviceType)) + '</td>';
-				if (childDeviceHost == undefined)
+				if (childDeviceHost === undefined)
 				{
 					childDeviceHost = "Dynamic";
 					dynamicCount++;
@@ -349,7 +354,7 @@ var WeMo = (function(api)
 				{
 					'dynamic': false
 				});
-			if (enableMulticast == undefined)
+			if (enableMulticast === undefined)
 			{
 				enableMulticast = "1";
 			}
@@ -358,12 +363,12 @@ var WeMo = (function(api)
 			html +=
 				'<div style="font-weight: bold; text-align: center;">Scan for WeMo devices</div>';
 			html += '<p><input type="checkbox"' +
-				(enableMulticast == "1" ? ' checked="checked"' : '') +
+				(enableMulticast === "1" ? ' checked="checked"' : '') +
 				(dynamicCount ? ' disabled="disabled"' : '') +
 				' onclick="WeMo.setEnableMulticast(' + device +
 				', this)">&#xA0;Enable scan for WeMo devices on LAN</p>';
 			// List unknown devices as candidates to add.
-			if (enableMulticast == "1")
+			if (enableMulticast === "1")
 			{
 				var unknownDevices = api.getDeviceStateVariable(device,
 					"urn:futzle-com:serviceId:WeMo1", "UnknownDeviceCount",
@@ -387,10 +392,10 @@ var WeMo = (function(api)
 						{
 							'dynamic': false
 						});
-					html += '<td>' + (unknownDeviceType == "urn:Belkin:device:sensor:1" ?	"Sensor" :
-						unknownDeviceType == "urn:Belkin:device:controllee:1" ?	"Appliance Switch" :
-            unknownDeviceType == "urn:Belkin:device:insight:1" ? "Insight Switch" :
-						unknownDeviceType == "urn:Belkin:device:lightswitch:1" ? "Light Switch" :
+					html += '<td>' + (unknownDeviceType === "urn:Belkin:device:sensor:1" ?	"Sensor" :
+						unknownDeviceType === "urn:Belkin:device:controllee:1" ?	"Appliance Switch" :
+            unknownDeviceType === "urn:Belkin:device:insight:1" ? "Insight Switch" :
+						unknownDeviceType === "urn:Belkin:device:lightswitch:1" ? "Light Switch" :
 						wemoEscapeHtml(unknownDeviceType)) + '</td>';
 					var unknownDeviceAddress = api.getDeviceStateVariable(device,
 						"urn:futzle-com:serviceId:WeMo1", "UnknownDevice" + i + "Host",
@@ -415,13 +420,36 @@ var WeMo = (function(api)
 			html +=
 				'<div style="font-weight: bold; text-align: center;">Manually add WeMo device</div>';
 			html += '</div>';
+			
+			// Allow manual subscription.
+			html +=
+				'<div id="wemo_enableManual" style="border: black 1px solid; padding: 5px; margin: 5px;">';
+			html +=
+				'<div style="font-weight: bold; text-align: center;">Subscribe to Insight parameters for devices</div>';
+				
+			var enableInsightSubscription = api.getDeviceStateVariable(device,
+				"urn:futzle-com:serviceId:WeMo1", "Report",
+				{
+					'dynamic': false
+				});
+			if (enableInsightSubscription === undefined)
+			{
+				enableInsightSubscription = "1";
+			}
+			html += '<p><input type="checkbox"' +
+				(enableInsightSubscription === "1" ? ' checked="checked"' : '') +
+				(dynamicCount ? ' disabled="disabled"' : '') +
+				' onclick="WeMo.setManualSubscription(' + device +
+				', this)">&#xA0;Enable subscription to Insight parameter changes</p>';
+			html += '</div>';
+			
 			// Notify user if the UPnP Proxy is not answering.
 			var proxyApiVersion = api.getDeviceStateVariable(device,
 				"urn:futzle-com:serviceId:WeMo1", "ProxyApiVersion",
 				{
 					'dynamic': false
 				});
-			if (proxyApiVersion == undefined || proxyApiVersion == "")
+			if (proxyApiVersion === undefined || proxyApiVersion === "")
 			{
 				html +=
 					'<div style="margin: 5px;"><p>UPnP Proxy is not running. Instant updates will not happen.  More information <a target="_new" href="http://code.mios.com/trac/mios_upnp-event-proxy/">here</a>.</p></div>';
@@ -447,6 +475,7 @@ var WeMo = (function(api)
 		configurationRemoveChildDevice: configurationRemoveChildDevice,
 		configurationAddFoundDevice: configurationAddFoundDevice,
 		setEnableMulticast: setEnableMulticast,
+		setManualSubscription: setManualSubscription,
 		doReload: doReload,
 		configuration: configuration
 	};
