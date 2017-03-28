@@ -24,7 +24,7 @@ end
             <serviceId>urn:futzle-com:serviceId:WeMo1</serviceId>
             <name>notifyInsightParams</name>
             <run>
-              return this_plugin.handleNotifyInsightParams(lul_device, lul_settings.insightParams, lul_settings.sid)
+              return this_plugin.handleNotifyBinaryState(lul_device, lul_settings.insightParams, lul_settings.sid)
             </run>
         </action>
         <action>
