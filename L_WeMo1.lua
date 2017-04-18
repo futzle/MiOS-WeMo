@@ -123,7 +123,7 @@ function ssdpSearchParse(resp)
 		local location = resp:match("\r\nLOCATION: *(.-)\r\n")
 		if (location) then
 			-- Extract host and port for convenience.
-			local host = location:match("://(.-)/")
+			local host = location:match("^%w+://([^/]+)")
 			if (host:match(":")) then
 				info.host, info.port = host:match("^(.+):(.+)$")
 				info.port = tonumber(info.port)
@@ -254,7 +254,7 @@ function createXpathParser(targets)
 		debug("sink: " .. chunk, 4)
 		if (xmlParser:parse(chunk) == nil) then
 			debug("sink: error", 4)
-			xmlParser:close()
+			--xmlParser:close()
 		end
 		return 1
 	end
